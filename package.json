@@ -1,0 +1,18 @@
+{
+  "name": "payprobe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Finds business-state bugs in payment integrations by replaying adversarial payment event sequences and inspecting the merchant's database.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start:reference": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl reference --port 3001 --db data/reference.db",
+    "start:vulnerable": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl vulnerable --port 3002 --db data/vulnerable.db",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  }
+}
