@@ -42,3 +42,29 @@ Each entry: the decision, why, and what it costs.
 
 ## D8. Python deferred
 - Nothing so far needs it. Revisit in Phase 4 only if the agent tooling is materially better in Python.
+
+## D9. A harness-side gateway ledger is the evidence for payment facts (Phase 2)
+- **Why:** the merchant database is the system under test. Its `payments` rows are the app's own claims and can be
+  written from forged or unverified input. "Verified captured payment" must come from what the gateway did.
+- **How:** `harness/ledger.js` is written only by the mock gateway (orders, refunds) and by `genuinePaymentEvent`
+  (payments). Forged events are built with `paymentEvent` and never enter the ledger.
+- **Cost:** tests must declare which events are genuine. Getting that wrong would corrupt the evidence.
+
+## D10. Explicit mappings, written by hand for now
+- `harness/mappings/{reference,vulnerable}.js` map normalized fields to tables and columns, plus the status
+  values meaning paid, captured, and not-counted refunds. Both are labelled `provenance: 'hand-written'`.
+- They validate the checker, not discovery. Phase 4 must produce this file for an unseen app.
+
+## D11. Three result states; missing evidence is never a pass
+- `pass`, `violation`, `cannot_verify`. Violations dominate: a check reports what it found even if another part
+  could not be verified. A pass with nothing in scope is marked `vacuous`.
+
+## D12. History by snapshots, not database triggers
+- I4 needs history. Ordered snapshots provide it without changing the target database.
+- **Cost:** a transition that happens and reverts inside one step is invisible. Triggers that log transitions
+  would see it but modify the target; reconsider in Phase 3 if snapshots prove too coarse.
+
+## D13. Refund behaviour of the mock gateway left unchanged pending a decision
+- The docs establish that a single refund above the captured amount, and a refund on a fully refunded payment,
+  are rejected; they do not establish a cumulative cap. The mock still accepts every refund. Details and the
+  proposed change: docs/GATEWAY_CONTRACT.md.

@@ -25,25 +25,46 @@ Merchant endpoints (both implementations):
 | `POST /webhooks/razorpay` | `payment.authorized/captured/failed`, `refund.processed/failed` |
 | `POST /api/orders/:id/refunds` `{amount}` | Merchant-initiated refund (no auth: local fixture) |
 
-## Business invariants (Phase 2 will make these executable)
+## Phase 2 (built): independent invariant checker
 
-Checked against the database after every event sequence, never against HTTP responses.
+```
+ simulator actions ──> harness/ledger.js        independent record: gateway orders, payment status
+ (mock gateway,                                 history, refunds. Never written by the merchant app.
+  genuinePaymentEvent)
+ merchant DB ──read-only──> harness/snapshot.js  normalized view through an explicit mapping
+                            harness/mappings/*   (hand-written for the two fixtures)
+ snapshots[] + ledger ────> harness/invariants.js  pass | violation | cannot_verify per invariant
+```
 
-| ID | Invariant |
-|----|-----------|
-| I1 | An order is paid only if a captured payment exists for that order's own `razorpay_order_id`. |
-| I2 | The payment that made an order paid has the same amount and currency as the server-side order. |
-| I3 | Each order has at most one fulfilment, and stock decreases exactly once per paid order. |
-| I4 | Once an order is validly paid, no later or reordered event moves it out of `paid`, and a captured payment never regresses. |
-| I5 | For each payment, the sum of non-failed refunds is at most the captured amount. |
-| I6 | I1–I5 hold when the same events are delivered concurrently. |
+- **Ledger, not merchant rows, is the evidence** for "verified captured payment". A merchant's `payments`
+  table is the system under test's own claim.
+- **Snapshots** issue only SELECTs inside a rolled-back read transaction, refuse to read mid-transaction,
+  and list every unmapped or absent field in `missing`.
+- **Three result states.** Missing evidence yields `cannot_verify`, never `pass`. A pass with nothing in
+  scope is marked `vacuous`.
+
+## Business invariants
+
+Checked against the database, never against HTTP responses.
+
+| ID | Invariant | Evidence used | Without it |
+|----|-----------|---------------|------------|
+| I1 | A paid order has a captured gateway payment for that same order | last snapshot + ledger | cannot_verify |
+| I2 | That payment's amount and currency equal the order's; the order amount equals what was registered with the gateway | last snapshot + ledger | cannot_verify |
+| I3 | At most one fulfilment per order; fulfilment only for paid orders; stock decreases once per newly fulfilled order | last snapshot; stock part needs a baseline snapshot | stock part cannot_verify |
+| I4 | A validly paid order never leaves paid; a captured payment record never regresses | ordered snapshots + ledger | cannot_verify from one snapshot |
+| I5 | Non-failed refunds per payment ≤ captured amount (merchant records and simulated gateway) | last snapshot + ledger | cannot_verify |
+| I6 | I1–I5 hold under concurrent processing | a test mode, not a state predicate | always cannot_verify until Phase 3 |
+
+Known limits: I4 sees only snapshot boundaries, so transitions inside one step are invisible. I3's stock
+check assumes only fulfilment changes stock between snapshots. Simulator refund behaviour differs from
+documented Razorpay behaviour: see GATEWAY_CONTRACT.md.
 
 ## Planned (not built)
 
-- **Phase 2:** `harness/invariants.js` (pure checks over a DB snapshot) and invariant tests.
 - **Phase 3:** `harness/scenarios.js` (named adversarial sequences: duplicates, reordering, concurrency, tampering),
   a runner that records initial state, exact event sequence, violated invariant and final state for each finding,
   and generated regression tests.
 - **Phase 4:** an investigation agent that must *discover* the mapping (where orders, payments and fulfilments live,
   which routes do what) in an unseen app, validate it with a positive control, and stop when it cannot.
-  The invariant checker would then run through that discovered mapping instead of hardcoded table names.
+  The checker already runs through a mapping, so a discovered mapping can replace the hand-written ones.

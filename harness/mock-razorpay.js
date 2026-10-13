@@ -34,6 +34,15 @@ function paymentEvent(type, { paymentId, orderId, amount, currency = 'INR', crea
   };
 }
 
+// A payment the simulated gateway really processed: recorded in the ledger, then
+// returned as an event. Forged events must use paymentEvent() directly so they
+// never enter the ledger.
+function genuinePaymentEvent(ledger, type, fields) {
+  const { paymentId, orderId, amount, currency = 'INR' } = fields;
+  ledger.recordPayment({ id: paymentId, orderId, amount, currency, status: type.split('.')[1] });
+  return paymentEvent(type, fields);
+}
+
 function refundEvent(type, { refundId, paymentId, amount, currency = 'INR', status = 'processed' }) {
   return {
     entity: 'event',
@@ -56,4 +65,6 @@ async function deliverWebhook(baseUrl, event, { secret, eventId = newEventId(), 
   return { status: res.status, eventId, body: await res.text() };
 }
 
-module.exports = { newPaymentId, newEventId, hmacHex, checkoutSignature, paymentEvent, refundEvent, deliverWebhook };
+module.exports = {
+  newPaymentId, newEventId, hmacHex, checkoutSignature, paymentEvent, genuinePaymentEvent, refundEvent, deliverWebhook,
+};

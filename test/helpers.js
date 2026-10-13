@@ -9,8 +9,9 @@ const IMPLS = {
 
 // Starts an implementation on an ephemeral loopback port with a fresh in-memory DB.
 // Returns the DB handle so tests can assert on stored state, not HTTP responses.
-async function startMerchant(impl) {
-  const gateway = createMockGateway();
+// Pass a harness ledger to have the mock gateway record its actions independently.
+async function startMerchant(impl, { ledger } = {}) {
+  const gateway = createMockGateway({ ledger });
   const { app, db } = IMPLS[impl].createApp({
     dbPath: ':memory:',
     keySecret: MOCK_KEY_SECRET,

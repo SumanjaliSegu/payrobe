@@ -9,12 +9,17 @@
 - [x] Smoke tests for both apps (8 passing), live-key guard
 - [x] README, DECISIONS, ARCHITECTURE
 
-## Phase 2: executable invariants (next)
-- [ ] `harness/invariants.js`: I1–I5 as pure functions over a DB snapshot, returning violations with evidence rows
-- [ ] Unit tests for the checker itself on hand-built bad DB states (does it catch violations, and stay quiet on good states?)
-- [ ] Snapshot helper: capture orders/payments/fulfilments/refunds/stock before and after a sequence
+## Phase 2: independent invariant checker (done 2026-10-13, not committed)
+- [x] Refund docs checked; findings and simulator contract in docs/GATEWAY_CONTRACT.md
+- [x] `harness/ledger.js`: independent gateway record; mock gateway writes to it; refund behaviour unchanged
+- [x] `harness/mappings/`: hand-written mappings for both fixtures
+- [x] `harness/snapshot.js`: read-only normalized snapshots with explicit `missing`
+- [x] `harness/invariants.js`: I1-I5 checks, I6 placeholder, pass / violation / cannot_verify
+- [x] Unit tests on hand-built fixtures; snapshot and ledger tests; happy-path integration on both apps
+- [ ] Decide: make mock `createRefund` follow documented rejections (GATEWAY_CONTRACT.md, "Proposed change")
 
-## Phase 3: prove the core idea
+## Phase 3: prove the core idea (next)
+- [ ] Run I1-I5 after concurrent delivery batches, repeated N times (this is I6)
 - [ ] Scenario runner: initial state → exact event sequence → invariant check → finding record
 - [ ] Scenarios: forged/replayed checkout signature (B1), amount mismatch (B2), concurrent duplicate captured (B3),
       captured then late failed (B4), cumulative and concurrent refunds (B5)

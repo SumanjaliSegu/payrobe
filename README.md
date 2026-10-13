@@ -10,7 +10,7 @@ not its HTTP responses.
 | Capability | State |
 |------------|-------|
 | Reference (correct) and vulnerable merchant apps | Built, smoke-tested |
-| Executable business invariants | Not built (Phase 2) |
+| Independent invariant checker (ledger, mappings, snapshots, I1-I5) | Built, unit-tested; happy path passes on both apps |
 | Reproducible bug detection | **Not yet demonstrated** (Phase 3) |
 | Autonomous investigation agent | Not built; design in Phase 4 |
 | Real Razorpay integration / test-mode payments | **None.** Everything uses local mocks |
@@ -55,10 +55,15 @@ merchant/
   vulnerable/          seeded-bug implementation + schema
 harness/
   mock-razorpay.js     builds and signs Razorpay-shaped events
+  ledger.js            independent record of what the simulated gateway did
+  snapshot.js          read-only normalized view of a merchant DB via a mapping
+  invariants.js        I1-I6 checks: pass / violation / cannot_verify
+  mappings/            hand-written mappings for the two fixture apps
 test/                  node:test suites
 docs/
   ARCHITECTURE.md      components and invariants I1–I6
   DECISIONS.md         design decisions and their costs
+  GATEWAY_CONTRACT.md  simulator behaviour vs Razorpay docs (with citations)
   SEEDED_BUGS.md       answer key for the vulnerable app (keep away from the agent)
 TODO.md
 ```
