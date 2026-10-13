@@ -9,3 +9,4 @@ data/*
 *.db-shm
 *.log
 .DS_Store
+results/

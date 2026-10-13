@@ -18,7 +18,14 @@
 - [x] Unit tests on hand-built fixtures; snapshot and ledger tests; happy-path integration on both apps
 - [ ] Decide: make mock `createRefund` follow documented rejections (GATEWAY_CONTRACT.md, "Proposed change")
 
-## Phase 3: prove the core idea (next)
+## Phase 3: prove the core idea (in progress)
+- [x] Experiment 1: duplicate genuine `payment.captured`, sequential + simultaneous, 3 runs each, both apps
+      (`test/scenarios/duplicate-captured.test.js`, records in `results/`)
+- [x] Barrier delivery mode (`harness/delivery.js`): both requests held in the server's body parser, released
+      together; a run counts as concurrent only if the server confirms both arrived and neither finished.
+      Reference: 12/12 verified-concurrent runs clean. Vulnerable: 12/12 duplicate fulfilment (4 invocations)
+- [ ] Optional: regression assertion for vulnerable + barrier (currently observation only)
+- [ ] Not covered: two app processes sharing one DB file (D3)
 - [ ] Run I1-I5 after concurrent delivery batches, repeated N times (this is I6)
 - [ ] Scenario runner: initial state → exact event sequence → invariant check → finding record
 - [ ] Scenarios: forged/replayed checkout signature (B1), amount mismatch (B2), concurrent duplicate captured (B3),
