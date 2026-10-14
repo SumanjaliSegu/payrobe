@@ -112,5 +112,172 @@ Each entry: the decision, why, and what it costs.
 - It lives in `test/helpers.js` because it starts the fixture apps in-process; harness modules do not import
   `merchant/`. The separate-process runner will need its own equivalent.
 - The existing scenarios, including the concurrency ones, still call `startMerchant` with its `:memory:`
-  default and are unchanged. No attack uses isolated runs yet.
+  default and are unchanged. No attack uses isolated runs yet. (Superseded for runner scenarios by D17,
+  which use isolated runs; duplicate-captured is still in-memory.)
 - **Cost:** file-backed runs are slower than in-memory ones and depend on disk speed (see D15).
+
+## D17. Scenario runner: one attack, fresh isolated run per repetition, inconclusive never clean (2026-10-14)
+- `harness/runner.js` runs a scenario `{ id, modes, targets, contract, play(ctx), preconditions? }` N times.
+  Each repetition gets its own app, run database and ledger from a caller-supplied `startTarget`
+  (`startAttackTarget` in `test/helpers.js`); the harness still never imports `merchant/`. Teardown runs in
+  `finally`, and its result is recorded; tests fail a run whose cleanup did not succeed.
+- Mapping and routes come from a validator report (`freezeValidation`). A route the validator never exercised
+  keeps `cannot_verify` in every record, even when the scenario's requests reach it.
+- Scenarios never see which app they attack, so both apps receive the same request sequence (asserted).
+- Outcome: `error`, else `inconclusive` (generic or scenario precondition failed, requested concurrency not
+  verified, or a target invariant `cannot_verify` / vacuous), else `violation` (any of I1-I5), else `clean`.
+- Every scenario carries gateway-contract labels, copied into each record: `status` [V]/[U]/[A] (the only values
+  the runner accepts) plus a `basis` ('documented', 'fixture-specific', 'inference', 'unresolved',
+  'not-established') matching the classes in docs/GATEWAY_CONTRACT.md. `conditionalOn` lists the non-[V] ones. Records hold no absolute local paths (`redact()`), only the run id and file name.
+- `harness/concurrency.js` copies the classification inlined in `duplicate-captured.test.js`, which is left
+  unchanged so its baseline does not move. The two must be kept in step until that scenario is ported.
+- Vulnerable-app outcomes are recorded, not asserted, until reproduced results are reviewed.
+- Audit fixes (2026-10-14, record schema `payprobe.run/v2`):
+  - Scenarios must name at least one target invariant; `judge()` also refuses `clean` without one.
+  - Freshness is enforced: a run id or ledger object already seen in this process, or a non-empty ledger, is
+    an `error` (stage `freshness`); mapped orders, payments, fulfilments or refunds already in the database,
+    or a failed scenario `initialState()`, make the run `inconclusive` and the attack is not played. The
+    runner still tears down every target it was given.
+  - HTTP requests time out (default 10 s); a timeout is recorded on the exchange and ends the run as `error`.
+    Duplicate deliveries and teardown are bounded too; a teardown timeout is a cleanup failure.
+  - `countedAs` is the outcome, or `cleanup_failed` when teardown did not succeed. Summaries count by it:
+    `reproduced` counts only `violation` runs that hit a target; inconclusive or cleanup-failed runs that also
+    hit a target are reported separately.
+  - Records mask values under keys naming signatures, secrets, tokens, authorization or passwords, and mask the
+    target's secrets and every signature the runner computed wherever they appear. JSON request bodies are kept
+    as objects; webhook bodies are kept as text, so a delivery can be re-signed and re-sent.
+    `derivedSignatures` says how each masked checkout signature was computed.
+  - `provenance` holds the frozen mapping projection and its verdict, the git commit, a dirty flag, the
+    repository-relative changed files and a SHA-256 of the uncommitted content.
+- **Cost:** scenarios are hand-written by someone who knows the fixtures, so they test the harness, not
+  discovery (D7). Contract claims were checked against the Razorpay docs on 2026-10-14 (GATEWAY_CONTRACT.md), not
+  against real deliveries; inference, fixture-specific, unresolved and [U] claims remain. Only sequential runner
+  scenarios exist.
+  The generic initial-state check assumes a target starts with no orders; an app with seeded orders would
+  always be inconclusive. Timed-out duplicate deliveries leave their requests to teardown, because
+  `delivery.js` (unchanged) has no timeout for sequential or simultaneous sends.
+
+## D18. Deterministic mapping discovery from source (2026-10-14)
+- `harness/discovery.js` proposes a v2 mapping for an app from its SOURCE alone: it parses `CREATE TABLE`
+  statements (SQLite columns, with comments stripped so comma-in-comment does not corrupt parsing) and
+  Express `app.<method>('<path>')` routes, then maps normalized entities/fields by general heuristics
+  (a status column, a gateway-order reference, a stock column, a reference to the payments table, standard
+  e-commerce route nouns) — never by fixed fixture names and never by reading an answer key.
+- Every entry carries file:line evidence. Status vocabularies come from a CHECK constraint when present,
+  else a priority-ordered scan of quoted JS literals (so `captured` wins over `paid` for payments although
+  both tables name the column `status`); such values are 'medium' confidence so the validator can confirm
+  them by behaviour rather than treat them as ambiguous.
+- Request/response field names (the create-order body and response keys) are a CONVENTION the discoverer
+  assumes and the validator then confirms; they are not parsed from source. An app that departs from the
+  convention leaves those entries `cannot_verify`, never wrong. This is the main discovery limitation.
+- Whatever discovery proposes is only a hypothesis: `harness/validator.js` confirms or rejects each entry
+  against behaviour + cited source, and only confirmed entries drive the checker, so a wrong guess yields
+  `cannot_verify`, never a false finding. On reference and vulnerable the discovered mapping matches the
+  hand-written v1 projection; on the unseen app it validates with zero contradictions.
+- **Cost:** heuristics can miss a column (e.g. a paid-payment link named without "paid"/"payment"); the
+  checker tolerates this where it can (I1 falls back to gateway-order-id) or returns `cannot_verify`.
+
+## D19. Autonomous investigator: bounded staged pipeline, deterministic safety (2026-10-14)
+- `harness/investigator.js` orchestrates discover → map → validate-safety → select → plan → execute →
+  compare → classify → regressions → report. It reuses the validator, runner and invariants unchanged.
+- It is given only `{ id, impl, sourceRoot }` and the scenario catalogue — never a list of an app's bugs.
+  Scenario SELECTION is driven solely by which entries the validator confirmed (`scenario.requires`), not
+  by any knowledge of what is wrong. The validator's `root` is the app's own source dir, so it structurally
+  cannot cite or read anything outside it (the answer key included), and the deny-list names it anyway.
+- Safety is deterministic: timeouts, freshness, isolation and the violation decision all live in code
+  (runner/validator). An optional `llm` adapter may only narrate findings or propose hypotheses; it cannot
+  widen what runs, relax validation, or decide a violation. Default is a deterministic null-object LLM, so
+  the pipeline runs with no model and no API key; keys are never hardcoded.
+- A finding is a `violation` only when the target invariant is reproduced in every repetition with clean
+  cleanup; otherwise `clean` or `inconclusive`, with reasons. If the mapping does not validate, the
+  investigation stops and runs no attack. Reports are redacted (reuse `runner.redact`) to JSON or Markdown.
+- Generated regression tests are written OUTSIDE `test/` (an artifact), so they are not added to the suite
+  until a human reviews them — consistent with the rule that vulnerable-app detection assertions wait for
+  review.
+- **Cost:** only sequential scenarios run through it today; concurrency scenarios stay in their own test.
+  The discovery limitation in D18 applies.
+
+## D20. Unseen fixture for genuine-discovery evaluation (2026-10-14)
+- `merchant/unseen/` is an independently-structured merchant app with different table names (`baskets`,
+  `charges`, `shipments`, `reversals`, `catalog`), column names (`gw_order_ref`, `amount_minor`, `state`,
+  `settled_charge`, `available_units`), status vocabularies (`open`/`settled`, `captured`) and route paths
+  (`/api/v2/baskets`, `/hooks/pg`, `/api/v2/charge-callback`). It carries no comment describing its
+  behaviour, and its one expected finding is asserted only in `test/investigator.test.js`, never in the
+  source and never given to the investigator.
+- It exists to measure discovery on names the heuristics were not tuned to: the investigator validates a
+  mapping from its source alone, finds its single planted flaw (a late `payment.failed` reversing a settled
+  basket → I4) 3/3, and is clean on the two behaviours it implements correctly (cross-order signature and
+  amount mismatch). This is the discovery measure; reproducing scenarios on the known vulnerable fixture is
+  not.
+- **Cost:** one small local benchmark. It demonstrates the method end to end; it does not prove universal
+  detection or real-world exploitability. It still follows the request/response convention (D18).
+
+## D21. Concurrency scenarios through the investigator (2026-10-14)
+- `harness/scenarios/duplicate-capture.js` is the runner-driven counterpart of the original in-memory
+  experiment in `test/scenarios/duplicate-captured.test.js`, which is left unchanged as the baseline. It
+  declares `modes: ['barrier', 'simultaneous']` and target I3; the investigator runs each scenario in a mode
+  it declares (sequential scenarios stay sequential), so one catalogue mixes sequential and concurrent attacks.
+- `harness/delivery.js` gained an optional `webhookPath` (default `/webhooks/razorpay`), threaded through
+  `sendPrepared`/`openHeldRequest`/`deliverTwiceWithBarrier`/`deliverTwice`, so concurrency can target an
+  app whose webhook path differs (e.g. the unseen apps). The default keeps the original test byte-for-byte.
+  The runner's `ctx.deliverTwice` now uses the mapped webhook path instead of a hardcoded one.
+- A concurrency result is a violation only when every repetition is verified-concurrent (both requests proven
+  to overlap at the server) AND the target invariant is broken with clean cleanup; otherwise it is
+  inconclusive. The investigator records `finding.concurrency` = verified | not_verified | not_applicable.
+- Verified on reference (clean), vulnerable (I3 duplicate_fulfilment, 3/3) and both unseen apps (clean), all
+  with barrier overlap proven 3/3.
+
+## D22. Discovery heuristics broadened for a second unseen app (2026-10-14)
+- Adding `merchant/unseen2` (D20) surfaced general vocabulary the heuristics had missed: a status column named
+  `phase` (now `isStatus` also matches phase/stage/lifecycle), a paid state named `fulfilled` (added to the
+  paid vocabulary), and a currency column named `iso_curr` (currency now matches any `curr` substring).
+  These are general payment/e-commerce words, not fixture-specific names. All four apps still validate with
+  zero contradictions, and the correct apps read as clean rather than inconclusive.
+- This is the expected shape of heuristic discovery: each genuinely new app may reveal a naming the rules did
+  not cover; the validator keeps every such gap safe (cannot_verify, never a false finding) until the rule is
+  generalised. It is not evidence of broad generalization from a handful of apps (D20).
+
+## D23. I6 made a real predicate: I1-I5 under verified concurrency (2026-10-14)
+- `checkConcurrency(concurrency, results)` in `harness/invariants.js` is no longer a permanent cannot_verify.
+  It aggregates the already-computed I1-I5 `results` under the run's `concurrency` evidence (from the runner /
+  `harness/concurrency.js`). `checkAll({ snapshots, ledger, concurrency })` takes `concurrency` optionally and
+  passes the I1-I5 results into I6; omitted (every non-concurrent caller and unit test) keeps I6 cannot_verify.
+- Result: `cannot_verify` when there is no concurrency evidence, the run was not concurrent, overlap was not
+  verified, or any in-scope I1-I5 is itself cannot_verify (so we never claim they hold on missing evidence);
+  `violation` when overlap is verified and some I1-I5 is violated (I6 names the underlying invariant and
+  kinds); `pass` only when overlap is verified and every I1-I5 passed.
+- I6 is informational, never a scenario target: `STATE_INVARIANTS` stays I1-I5, the runner still rejects
+  non-I1-I5 targets, and the deterministic violation / reproduced-count decisions are unchanged. I6 only adds
+  a line to `verdicts`.
+- **Cost / honest consequence:** on a clean concurrent run I6 reads cannot_verify (not pass), because I5
+  (refunds) is cannot_verify under a validated mapping when nothing was refunded — we genuinely cannot assert
+  all of I1-I5 hold under concurrency without exercising refunds. The pass path is covered by a unit test with
+  all-pass results; in practice a barrier run shows I6 violation (vulnerable) or cannot_verify (correct apps).
+
+## D24. B5 refund scenario via the independent ledger; mock unchanged (Option A) (2026-10-14)
+- `harness/scenarios/cumulative-refund-over-capture.js` issues two refunds through the merchant refund route,
+  each equal to the captured amount (each within the single-refund cap; cumulatively double). Target I5.
+- The mock gateway is unchanged (GATEWAY_CONTRACT "Decision (2026-10-14): Option A"). Detection rests on
+  `gateway_refunds_exceed_captured` from `harness/ledger.js` (independent evidence), because the validator
+  never refunds, so refund DB-mapping entries are never behaviour-confirmed and the frozen mapping has
+  `refunds === null` (verified empirically before finalising). The merchant-records branch is therefore not
+  the detector here.
+- Each individual refund equals (not exceeds) the captured amount, so the single-over-cap simulator artefact
+  the contract warns about is avoided; the cumulative sum is the defect. Findings are labelled [V] (single
+  over-cap rejected), [U] (cumulative cap undocumented), [A] (mock accepts cumulative refunds) and are not
+  reported as proven real-world money loss.
+- Controls: a correct app rejects the second refund (409), its ledger sum stays within captured, and I5 is
+  not a violation; because refunds are unmapped, the correct-app outcome is `inconclusive` (I5 cannot_verify),
+  never a false violation. `reference`, `unseen` and `unseen2` are the correct controls.
+- **Update (2026-10-14, after review):** the vulnerable-app finding is now an **asserted** regression. The
+  evidence was reviewed independently of the merchant's own records: both refunds accepted (201/201), the
+  gateway ledger (`harness/ledger.js`) records a refund total of 2x the captured amount for the payment, and
+  I5 reports `gateway_refunds_exceed_captured` in 3/3 runs with clean cleanup and passing preconditions. The
+  [U]/[A] labels are preserved and it is not presented as proven real-world money loss.
+- **Fixture correction (2026-10-14):** `merchant/unseen` originally had an unplanned cumulative-refund defect
+  (its reversal handler capped each refund individually but did not track the cumulative total). The
+  investigator found it — a real defect, not a false positive. It is now fixed with the smallest change: the
+  handler sums prior non-failed reversals for the charge and rejects when the cumulative total would exceed
+  the captured amount (the reference app's pattern), inside the existing transaction. `merchant/unseen` is now
+  a clean refund control, and its I4 behaviour and everything else are unchanged.
+- Concurrent refunds (the vulnerable cap also spans an await) are deferred to a later scenario.

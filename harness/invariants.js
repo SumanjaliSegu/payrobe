@@ -280,28 +280,60 @@ function checkRefundsWithinCaptured(after, ledger) {
   return finalize(r);
 }
 
-// I6 is a test mode, not a state predicate: run I1-I5 after concurrent delivery batches.
-function checkConcurrency() {
-  const r = newResult('I6', 'I1-I5 hold under concurrent event processing');
-  r.unverifiable.push({ reason: ['not a snapshot property: requires running I1-I5 after concurrent delivery batches, repeated (Phase 3)'] });
+// I6: under VERIFIED-concurrent delivery, none of I1-I5 is violated. It is a test mode realized by the
+// runner (barrier/simultaneous delivery, overlap proven by harness/concurrency.js), so it is not a snapshot
+// property on its own: it aggregates the already-computed I1-I5 `results` under the run's `concurrency`
+// evidence. It is informational, never a scenario target (targets stay I1-I5).
+//   concurrency: the run's evidence { requested, status: 'not_applicable'|'verified'|'not_verified',
+//                deliveries: [{ verified }] } from harness/runner.js. Omitted/undefined -> no evidence.
+//   results:     the I1-I5 result objects (this function does not recompute state).
+// Result:
+//   cannot_verify  no evidence, run was not concurrent, overlap not verified, or some in-scope I1-I5 is
+//                  itself cannot_verify (then we cannot assert they hold) — missing evidence is never a pass.
+//   violation      overlap verified AND some I1-I5 is a violation (names the underlying invariants).
+//   pass           overlap verified AND every I1-I5 passed (vacuous if nothing was in scope).
+function checkConcurrency(concurrency, results = []) {
+  const r = newResult('I6', 'I1-I5 hold under verified-concurrent event processing');
+  if (!concurrency || concurrency.requested !== true) {
+    r.unverifiable.push({ reason: ['no concurrency evidence: not a concurrent run (I6 is a test mode, exercised by the runner under barrier/simultaneous delivery)'] });
+    return finalize(r);
+  }
+  const verified = concurrency.status === 'verified'
+    && Array.isArray(concurrency.deliveries) && concurrency.deliveries.length > 0
+    && concurrency.deliveries.every((d) => d.verified === true);
+  if (!verified) {
+    r.unverifiable.push({ reason: [`concurrent delivery was requested but overlap was not verified (status ${concurrency.status ?? 'unknown'}); cannot assert I1-I5 under concurrency`] });
+    return finalize(r);
+  }
+  const state = results.filter((x) => ['I1', 'I2', 'I3', 'I4', 'I5'].includes(x.id));
+  const violated = state.filter((x) => x.status === STATUS.VIOLATION);
+  const unresolved = state.filter((x) => x.status === STATUS.CANNOT_VERIFY);
+  r.checked = state.length;
+  if (violated.length) {
+    for (const v of violated) r.violations.push({ kind: 'invariant_violated_under_concurrency', invariant: v.id, kinds: v.violations.map((x) => x.kind) });
+  } else if (unresolved.length) {
+    r.unverifiable.push({ reason: [`overlap verified, but ${unresolved.map((x) => x.id).join(', ')} are cannot_verify, so I1-I5 cannot be asserted to hold`] });
+  }
+  r.notes.push('judged under verified-concurrent delivery (overlap proven at the server)');
   return finalize(r);
 }
 
 // snapshots: ordered oldest -> newest. The first is the baseline when there are two or more.
-function checkAll({ snapshots, ledger }) {
+// concurrency (optional): the run's overlap evidence from the runner; drives I6 when present.
+function checkAll({ snapshots, ledger, concurrency }) {
   if (!Array.isArray(snapshots) || snapshots.length === 0) throw new Error('checkAll: at least one snapshot is required');
   const names = new Set(snapshots.map((s) => s.mapping));
   if (names.size > 1) throw new Error('checkAll: snapshots come from different mappings');
   const after = snapshots[snapshots.length - 1];
   const before = snapshots.length > 1 ? snapshots[0] : null;
-  return [
+  const state = [
     checkPaidHasCapture(after, ledger),
     checkAmountMatches(after, ledger),
     checkFulfilledOnce(before, after),
     checkPaidNotReversed(snapshots, ledger),
     checkRefundsWithinCaptured(after, ledger),
-    checkConcurrency(),
   ];
+  return [...state, checkConcurrency(concurrency, state)];
 }
 
 module.exports = {

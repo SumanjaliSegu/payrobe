@@ -9,6 +9,8 @@ const { createRunDatabase } = require('../harness/run-db');
 const IMPLS = {
   reference: require('../merchant/reference/app'),
   vulnerable: require('../merchant/vulnerable/app'),
+  unseen: require('../merchant/unseen/app'),
+  unseen2: require('../merchant/unseen2/app'),
 };
 
 // Starts an implementation on an ephemeral loopback port with a fresh in-memory DB, or with the
@@ -98,6 +100,24 @@ async function startIsolatedMerchant(impl, { role = 'attack', tmpRoot } = {}) {
   };
 }
 
+// An isolated run (startIsolatedMerchant) in the target shape harness/runner.js expects. The trace is
+// the live HTTP-layer trace, used for concurrency evidence. teardown is the isolated run's own.
+async function startAttackTarget(impl, { role = 'attack', tmpRoot } = {}) {
+  const iso = await startIsolatedMerchant(impl, { role, tmpRoot });
+  return {
+    impl,
+    baseUrl: iso.baseUrl,
+    reader: iso.reader,
+    ledger: iso.ledger,
+    webhookSecret: iso.webhookSecret,
+    keySecret: iso.merchant.keySecret,
+    trace: iso.merchant.trace,
+    run: iso.run,
+    describe: iso.describe,
+    teardown: iso.teardown,
+  };
+}
+
 async function postJson(baseUrl, path, body) {
   const res = await fetch(`${baseUrl}${path}`, {
     method: 'POST',
@@ -114,4 +134,4 @@ async function postJson(baseUrl, path, body) {
   return { status: res.status, json, text };
 }
 
-module.exports = { IMPLS, startMerchant, startIsolatedMerchant, postJson };
+module.exports = { IMPLS, startMerchant, startIsolatedMerchant, startAttackTarget, postJson };

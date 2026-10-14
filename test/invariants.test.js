@@ -229,13 +229,46 @@ describe('I5 refunds never exceed captured', () => {
 });
 
 describe('I6 and checkAll', () => {
-  it('I6 is always cannot_verify: it is a test mode, not a snapshot property', () => {
+  const verified = { requested: true, status: 'verified', deliveries: [{ verified: true }, { verified: true }] };
+  const res = (id, status, violations = []) => ({ id, status, checked: 1, violations, unverifiable: [], notes: [] });
+
+  it('I6 is cannot_verify without concurrency evidence (not a concurrent run)', () => {
     assert.equal(inv.checkConcurrency().status, CANNOT_VERIFY);
+    assert.equal(inv.checkConcurrency({ requested: false }).status, CANNOT_VERIFY);
   });
 
-  it('checkAll returns I1-I6 in order and rejects mixed mappings', () => {
+  it('I6 is cannot_verify when overlap was requested but not verified', () => {
+    const r = inv.checkConcurrency({ requested: true, status: 'not_verified', deliveries: [{ verified: false }] }, [res('I3', PASS)]);
+    assert.equal(r.status, CANNOT_VERIFY);
+    assert.match(r.unverifiable[0].reason[0], /overlap was not verified/);
+  });
+
+  it('I6 passes when overlap is verified and every I1-I5 passes', () => {
+    const r = inv.checkConcurrency(verified, ['I1', 'I2', 'I3', 'I4', 'I5'].map((id) => res(id, PASS)));
+    assert.equal(r.status, PASS);
+    assert.equal(r.checked, 5);
+  });
+
+  it('I6 is a violation when a verified-concurrent run has an I1-I5 violation, and names it', () => {
+    const results = [res('I1', PASS), res('I2', PASS), res('I3', VIOLATION, [{ kind: 'duplicate_fulfilment' }]), res('I4', PASS), res('I5', PASS)];
+    const r = inv.checkConcurrency(verified, results);
+    assert.equal(r.status, VIOLATION);
+    assert.equal(r.violations[0].invariant, 'I3');
+    assert.deepEqual(r.violations[0].kinds, ['duplicate_fulfilment']);
+  });
+
+  it('I6 is cannot_verify when overlap is verified but an in-scope I1-I5 is cannot_verify', () => {
+    const results = [res('I1', PASS), res('I2', CANNOT_VERIFY), res('I3', PASS), res('I4', PASS), res('I5', PASS)];
+    const r = inv.checkConcurrency(verified, results);
+    assert.equal(r.status, CANNOT_VERIFY);
+    assert.match(r.unverifiable[0].reason[0], /I2 .*cannot_verify|cannot_verify/);
+  });
+
+  it('checkAll returns I1-I6 in order, rejects mixed mappings, and I6 is cannot_verify without concurrency', () => {
     const s = snap('s', { orders: [order('A')] });
-    assert.deepEqual(inv.checkAll({ snapshots: [s], ledger: ledger() }).map((r) => r.id), ['I1', 'I2', 'I3', 'I4', 'I5', 'I6']);
+    const out = inv.checkAll({ snapshots: [s], ledger: ledger() });
+    assert.deepEqual(out.map((r) => r.id), ['I1', 'I2', 'I3', 'I4', 'I5', 'I6']);
+    assert.equal(out[5].status, CANNOT_VERIFY);
     assert.throws(() => inv.checkAll({ snapshots: [s, { ...s, mapping: 'other' }], ledger: ledger() }), /different mappings/);
   });
 });

@@ -10,7 +10,11 @@
   "scripts": {
     "start:reference": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl reference --port 3001 --db data/reference.db",
     "start:vulnerable": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl vulnerable --port 3002 --db data/vulnerable.db",
-    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\""
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\"",
+    "investigate": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js",
+    "investigate:unseen": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app unseen",
+    "investigate:reference": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app reference",
+    "investigate:vulnerable": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app vulnerable"
   },
   "dependencies": {
     "express": "4.21.2"

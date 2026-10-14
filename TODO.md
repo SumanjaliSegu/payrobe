@@ -30,10 +30,26 @@
 - [ ] Reference + simultaneous never overlaps at the server (0/102); only barrier exercises reference concurrency
 - [ ] Not covered: two app processes sharing one DB file (D3)
 - [ ] Run I1-I5 after concurrent delivery batches, repeated N times (this is I6; checker still returns cannot_verify)
-- [ ] Scenario runner: initial state → exact event sequence → invariant check → finding record
-      (design approved 2026-10-14; not yet implemented)
-- [ ] Scenarios: forged/replayed checkout signature (B1), amount mismatch (B2), concurrent duplicate captured (B3,
-      covered by experiment 1, not yet ported to the runner), captured then late failed (B4)
+- [x] Scenario runner (`harness/runner.js`, D17): fresh isolated run per repetition, run records with steps, HTTP
+      exchanges, snapshots, verdicts, contract labels, concurrency evidence and cleanup; paths redacted
+- [x] Runner scenarios (sequential): cross-order checkout signature (B1), captured amount mismatch (B2, [U]),
+      late failure of an earlier attempt (B4). Reference asserted clean with liveness checks; vulnerable recorded only
+- [x] Runner audit fixes (D17): reproduction accounting, mandatory targets, freshness enforcement, request and
+      teardown timeouts, cleanup-aware summaries, signature redaction, replay metadata and provenance, live barrier test
+- [ ] Runner audit, not yet addressed: request-equivalence check is structural only; no per-scenario evidence hook
+- [ ] Review the vulnerable-app runner results (39/39 per scenario as of 2026-10-14) before adding any regression assertion
+- [x] Quote the Standard Checkout, multiple-attempt and webhook-ordering docs in GATEWAY_CONTRACT.md (2026-10-14)
+- [x] Update scenario contract labels to match GATEWAY_CONTRACT.md (2026-10-14; `basis` field added, status stays V/U/A):
+      checkout fields and signature → [V]; verify route body stays an assumption (fixture-specific);
+      several attempts per order and out-of-order delivery → [V]; amount mismatch stays [U]
+- [ ] Amount mismatch (B2) is unsupported for the fixtures: documented capture rules point against it for orders
+      without `partial_payment`. Decide whether to keep it as a conditional experiment or retire it
+- [ ] Candidate, documented: one payment's `payment.failed` followed by its `payment.captured` (late authorisation)
+- [ ] Candidate, needs a new fixture: `partial_payment` orders (marked paid while `amount_due` > 0?)
+- [ ] Open docs questions (see GATEWAY_CONTRACT.md): amounts under automatic capture; `partial_payment` rules;
+      the create-order "maps 1:1 to a payment attempt" note vs `attempts`; real delivery shapes
+- [ ] Port duplicate captured (B3) to the runner only after a side-by-side parity run (file-backed concurrency unvalidated)
+- [ ] Not modelled: the same payment going from captured to failed (not documented gateway behaviour)
 - [ ] Refund scenarios (B5): blocked until the mock gateway refund contract is decided (Phase 2 open item)
 - [ ] Each finding records initial state, event sequence, violated invariant, resulting DB state
 - [ ] Each finding reproduced 3/3 runs before it counts
@@ -41,8 +57,28 @@
 - [ ] Emit a standalone regression test per finding
 - [ ] Update the Demonstrated column in SEEDED_BUGS.md only for bugs actually shown
 
-## Phase 4: prepare autonomous investigation (design first)
-- [ ] Write a separate, unseen merchant app with different names and structure (D7)
+## Phase 4: autonomous investigation (built 2026-10-14)
+- [x] Mapping discovery from source: `harness/discovery.js`, evidence-backed, general heuristics, no answer key (D18)
+- [x] Investigator pipeline: `harness/investigator.js` discover→validate→select→execute→classify→report; deterministic,
+      bounded, redacted JSON/Markdown reports, optional LLM narration hook, regression artifacts outside test/ (D19)
+- [x] CLI: `bin/payprobe-investigate.js` (+ npm run investigate*) selects a local app, runs, exports a report
+- [x] Unseen fixture `merchant/unseen/` for genuine-discovery evaluation; hidden finding only in the test (D20)
+- [x] Tests: discovery unit tests; investigator e2e (clean control, unseen violation, inconclusive, safe-stop, redaction)
+- [x] Define "stop safely": mapping fails to validate → investigation stops, no attack run (D19)
+- [x] Concurrency through the investigator: `harness/scenarios/duplicate-capture.js` (barrier), delivery.js gained an
+      optional webhookPath so overlap works on any app; violation requires proven overlap + I3 broken (D21)
+- [x] Second unseen app `merchant/unseen2/` (independent ticketing vocabulary, correct): validates, zero false
+      positives across all four scenarios including concurrency (D20, D22)
+- [x] I6 is now a real predicate: I1-I5 under verified-concurrent delivery, informational, never a target (D23)
+- [x] B5 refund scenario `cumulative-refund-over-capture` (I5) via the independent ledger; mock unchanged, Option A
+      recorded in GATEWAY_CONTRACT (D24). Controls: reference/unseen2 no violation; vulnerable recorded-only
+- [x] Vulnerable-app refund detection assertion added after reviewing the independent ledger evidence (both refunds
+      accepted, ledger refund sum > captured, I5 gateway_refunds_exceed_captured, 3/3); [U]/[A] labels preserved
+- [x] Fixed merchant/unseen's cumulative-refund defect: reversal handler now sums prior non-failed reversals and
+      rejects the second (409); it is now a clean refund control alongside reference and unseen2
+- [ ] Deferred: concurrent-refund variant; request/response field-name discovery is convention-based (D18);
+      a larger/more varied app corpus; Option B (mock enforces documented refund rejections) if a scenario needs it
+- [ ] Write a separate, unseen merchant app with different names and structure (D7) — done as merchant/unseen (D20)
 - [x] Design the discovery output: mapping v2 with per-entry evidence and confidence (`harness/mapping-v2.js`)
 - [x] Validation gate: negative + positive control, per-entry confirmed / contradicted / cannot_verify
       (`harness/validator.js`, D14)
@@ -51,12 +87,13 @@
       Validator tests use it; the report records the database in `report.database`
 - [x] Isolated attack-run foundation: `startIsolatedMerchant` (test/helpers.js) gives each run a new database,
       ledger and app; teardown closes readers, then the app, then cleans up (D16). Validator tests use it too
-- [ ] Protocol: validate on one run, freeze the mapping, run each attack via `startIsolatedMerchant`
-      (no attack uses it yet; the existing scenarios stay in-memory)
+- [x] Protocol: validate on one run, freeze the mapping, run each attack via `startIsolatedMerchant`
+      (runner scenarios use it; duplicate captured stays in-memory)
 - [ ] Launch validation (separate process on a run database); launch entries are evidence-checked only today
 - [ ] File-backed concurrency: not validated. Concurrency scenarios still use `:memory:`; moving them needs
       re-running and new baselines
-- [ ] Redaction step for local paths (`report.database.path`, `directory`) before any public benchmark output
+- [ ] Redaction step for local paths before any public benchmark output: done for runner records
+      (`redact()` in `harness/runner.js`); validator reports and duplicate-captured records are not redacted
 - [ ] Sweep for leftover `payprobe-run-*` directories after a crash (none are swept today)
 - [ ] Second fulfilment shape (flag or timestamp column instead of rows)
 - [ ] Verify and refund routes: exercised by no validation step yet, so never confirmed

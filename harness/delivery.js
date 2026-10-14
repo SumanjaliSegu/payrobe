@@ -22,7 +22,7 @@ function signatureMatches(prepared, secret) {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
-async function sendPrepared(baseUrl, prepared, index, clock) {
+async function sendPrepared(baseUrl, prepared, index, clock, webhookPath = '/webhooks/razorpay') {
   const body = Buffer.from(prepared.body); // fresh copy; hashed again below to prove what was sent
   const record = {
     index,
@@ -31,7 +31,7 @@ async function sendPrepared(baseUrl, prepared, index, clock) {
     bodySha256: sha256(body),
     startMs: clock(),
   };
-  const res = await fetch(`${baseUrl}/webhooks/razorpay`, {
+  const res = await fetch(`${baseUrl}${webhookPath}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -51,8 +51,8 @@ const intervalsOverlap = (a, b) => a.start < b.end && b.start < a.end;
 // Opens a real HTTP request (own connection, Content-Length set) and sends everything
 // except the last `holdBytes` of the body. The server sees the request and starts its
 // body parser, which then waits for the remaining bytes until release() is called.
-function openHeldRequest(baseUrl, prepared, index, holdBytes, clock) {
-  const url = new URL('/webhooks/razorpay', baseUrl);
+function openHeldRequest(baseUrl, prepared, index, holdBytes, clock, webhookPath = '/webhooks/razorpay') {
+  const url = new URL(webhookPath, baseUrl);
   const body = Buffer.from(prepared.body);
   const record = {
     index,
@@ -118,11 +118,11 @@ async function waitUntil(predicate, timeoutMs, clock) {
 // If the barrier is not reached in time, both are released anyway so the app can finish,
 // and `barrier.reached` is false: such a run must not be counted as concurrent.
 async function deliverTwiceWithBarrier(baseUrl, prepared, {
-  observe, clock, holdBytes = 1, barrierTimeoutMs = 2000, responseTimeoutMs = 5000,
+  observe, clock, holdBytes = 1, barrierTimeoutMs = 2000, responseTimeoutMs = 5000, webhookPath = '/webhooks/razorpay',
 }) {
   if (typeof observe !== 'function') throw new Error('barrier delivery: observe() is required');
   if (!(holdBytes >= 1 && holdBytes < prepared.body.length)) throw new Error('barrier delivery: invalid holdBytes');
-  const held = [0, 1].map((i) => openHeldRequest(baseUrl, prepared, i, holdBytes, clock));
+  const held = [0, 1].map((i) => openHeldRequest(baseUrl, prepared, i, holdBytes, clock, webhookPath));
 
   const reached = await waitUntil(() => observe().arrived >= 2, barrierTimeoutMs, clock);
   const atRelease = observe();
@@ -157,17 +157,17 @@ async function deliverTwiceWithBarrier(baseUrl, prepared, {
 // mode: 'sequential' (second send starts after the first response, with an optional
 // `between` hook), 'simultaneous' (both sends started together), or 'barrier'
 // (both held inside the server before release; needs `observe`, see above).
-async function deliverTwice(baseUrl, prepared, { mode, between, observe, clock = () => performance.now(), ...barrierOptions }) {
+async function deliverTwice(baseUrl, prepared, { mode, between, observe, clock = () => performance.now(), webhookPath = '/webhooks/razorpay', ...barrierOptions }) {
   let requests;
   let barrier = null;
   if (mode === 'barrier') {
-    ({ requests, barrier } = await deliverTwiceWithBarrier(baseUrl, prepared, { observe, clock, ...barrierOptions }));
+    ({ requests, barrier } = await deliverTwiceWithBarrier(baseUrl, prepared, { observe, clock, webhookPath, ...barrierOptions }));
   } else if (mode === 'sequential') {
-    const first = await sendPrepared(baseUrl, prepared, 0, clock);
+    const first = await sendPrepared(baseUrl, prepared, 0, clock, webhookPath);
     if (between) await between();
-    requests = [first, await sendPrepared(baseUrl, prepared, 1, clock)];
+    requests = [first, await sendPrepared(baseUrl, prepared, 1, clock, webhookPath)];
   } else if (mode === 'simultaneous') {
-    requests = await Promise.all([0, 1].map((i) => sendPrepared(baseUrl, prepared, i, clock)));
+    requests = await Promise.all([0, 1].map((i) => sendPrepared(baseUrl, prepared, i, clock, webhookPath)));
   } else {
     throw new Error(`deliverTwice: unknown mode ${mode}`);
   }

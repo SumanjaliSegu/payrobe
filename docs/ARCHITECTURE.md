@@ -54,7 +54,7 @@ Checked against the database, never against HTTP responses.
 | I3 | At most one fulfilment per order; fulfilment only for paid orders; stock decreases once per newly fulfilled order | last snapshot; stock part needs a baseline snapshot | stock part cannot_verify |
 | I4 | A validly paid order never leaves paid; a captured payment record never regresses | ordered snapshots + ledger | cannot_verify from one snapshot |
 | I5 | Non-failed refunds per payment ≤ captured amount (merchant records and simulated gateway) | last snapshot + ledger | cannot_verify |
-| I6 | I1–I5 hold under concurrent processing | a test mode, not a state predicate | always cannot_verify until Phase 3 |
+| I6 | I1–I5 hold under verified-concurrent processing | the run's overlap evidence + the I1–I5 results | cannot_verify without proven overlap, or if any in-scope I1–I5 is cannot_verify |
 
 Known limits: I4 sees only snapshot boundaries, so transitions inside one step are invisible. I3's stock
 check assumes only fulfilment changes stock between snapshots. Simulator refund behaviour differs from
@@ -69,11 +69,42 @@ documented Razorpay behaviour: see GATEWAY_CONTRACT.md.
   per-entry status, verdict `validated` / `rejected` / `insufficient` / `malformed`, and a negative-control
   result reported separately from the verdict. See D14.
 
+## Phase 3 (built): scenario runner
+
+```
+ validator report ──freezeValidation──> frozen mapping + routes (with validation status)
+ scenario (harness/scenarios/*) ──> harness/runner.js ──per repetition──> startTarget() (fresh app, run DB, ledger)
+                                     ctx.step / createOrder / genuine / webhook / post / deliverTwice
+                                     snapshots per step ──> invariants.js ──> outcome ──> redacted run record
+                                     teardown in finally ──> cleanup result in the record
+```
+
+See D17. Outcomes: error / inconclusive / violation / clean; inconclusive is never counted as clean.
+
+## Phase D/E (built): autonomous investigator
+
+```
+ app source dir ──> harness/discovery.js ──> v2 mapping hypothesis (tables, columns, routes, status
+   (schema + routes, general heuristics)        vocabularies) with file:line evidence; no answer key
+         │
+         v
+ harness/investigator.js  (bounded staged pipeline; deterministic, optional LLM narration hook)
+   inspect → map → validate-safety ─(harness/validator.js: +/- controls)→ stop if not validated
+           → select (confirmed entries) → execute (harness/runner.js, isolated runs)
+           → compare/classify (invariants.js + ledger) → regressions (artifact) → redacted report
+         │
+         v
+ bin/payprobe-investigate.js  (CLI: pick a local app, run, export JSON/Markdown)
+```
+
+The investigator reuses the validator, runner and invariants unchanged; discovery and orchestration are the
+new parts. Deterministic code enforces all safety; an LLM, if supplied, may only narrate or propose
+hypotheses the validator must still confirm. Evaluated for genuine discovery on `merchant/unseen` (D20).
+See D18 (discovery), D19 (investigator). Everything stays local: isolated apps, mock gateway, no network.
+
 ## Planned (not built)
 
-- **Phase 3:** `harness/scenarios.js` (named adversarial sequences: duplicates, reordering, concurrency, tampering),
-  a runner that records initial state, exact event sequence, violated invariant and final state for each finding,
-  and generated regression tests.
+- **Phase 3:** generated regression tests per reviewed finding; concurrency scenarios through the runner.
 - **Phase 4:** an investigation agent that must *discover* the mapping (where orders, payments and fulfilments live,
   which routes do what) in an unseen app, validate it with a positive control, and stop when it cannot.
   The checker already runs through a mapping, so a discovered mapping can replace the hand-written ones.
