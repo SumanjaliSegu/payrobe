@@ -38,8 +38,23 @@
 
 ## Phase 4: prepare autonomous investigation (design first)
 - [ ] Write a separate, unseen merchant app with different names and structure (D7)
-- [ ] Design the discovery output: a mapping with per-field confidence and the evidence for each
-- [ ] Validation gate: a positive control must be observed as paid through the mapping, else stop
+- [x] Design the discovery output: mapping v2 with per-entry evidence and confidence (`harness/mapping-v2.js`)
+- [x] Validation gate: negative + positive control, per-entry confirmed / contradicted / cannot_verify
+      (`harness/validator.js`, D14)
+- [x] Isolated per-run database: fresh SQLite file in its own temp directory, separate read-only reader
+      with 5 s busy timeout, safe non-recursive cleanup, keep-on-failure (`harness/run-db.js`, D15).
+      Validator tests use it; the report records the database in `report.database`
+- [x] Isolated attack-run foundation: `startIsolatedMerchant` (test/helpers.js) gives each run a new database,
+      ledger and app; teardown closes readers, then the app, then cleans up (D16). Validator tests use it too
+- [ ] Protocol: validate on one run, freeze the mapping, run each attack via `startIsolatedMerchant`
+      (no attack uses it yet; the existing scenarios stay in-memory)
+- [ ] Launch validation (separate process on a run database); launch entries are evidence-checked only today
+- [ ] File-backed concurrency: not validated. Concurrency scenarios still use `:memory:`; moving them needs
+      re-running and new baselines
+- [ ] Redaction step for local paths (`report.database.path`, `directory`) before any public benchmark output
+- [ ] Sweep for leftover `payprobe-run-*` directories after a crash (none are swept today)
+- [ ] Second fulfilment shape (flag or timestamp column instead of rows)
+- [ ] Verify and refund routes: exercised by no validation step yet, so never confirmed
 - [ ] Define "stop safely" outcomes (cannot find state, ambiguous mapping, app won't start)
 
 ## Later / open

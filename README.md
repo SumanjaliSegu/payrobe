@@ -12,7 +12,8 @@ not its HTTP responses.
 | Reference (correct) and vulnerable merchant apps | Built, smoke-tested |
 | Independent invariant checker (ledger, mappings, snapshots, I1-I5) | Built, unit-tested; happy path passes on both apps |
 | Reproducible bug detection | **Not yet demonstrated** (Phase 3) |
-| Autonomous investigation agent | Not built; design in Phase 4 |
+| Mapping v2 + validator (evidence + one normal purchase) | Built, tested on both apps with correct and wrong mappings |
+| Autonomous investigation agent | Not built |
 | Real Razorpay integration / test-mode payments | **None.** Everything uses local mocks |
 
 ## Setup on Windows
@@ -58,7 +59,9 @@ harness/
   ledger.js            independent record of what the simulated gateway did
   snapshot.js          read-only normalized view of a merchant DB via a mapping
   invariants.js        I1-I6 checks: pass / violation / cannot_verify
-  mappings/            hand-written mappings for the two fixture apps
+  mappings/            hand-written mappings for the two fixture apps (v1; v2 with evidence in mappings/v2/)
+  mapping-v2.js        mapping v2 schema, shape check, projection to v1
+  validator.js         validates a v2 mapping: cited evidence + one normal purchase
 test/                  node:test suites
 docs/
   ARCHITECTURE.md      components and invariants I1–I6

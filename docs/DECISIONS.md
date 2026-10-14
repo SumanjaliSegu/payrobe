@@ -68,3 +68,49 @@ Each entry: the decision, why, and what it costs.
 - The docs establish that a single refund above the captured amount, and a refund on a fully refunded payment,
   are rejected; they do not establish a cumulative cap. The mock still accepts every refund. Details and the
   proposed change: docs/GATEWAY_CONTRACT.md.
+
+## D14. Mapping v2 with per-entry evidence, and a validator that trusts behaviour plus citations (2026-10-13)
+- `harness/mapping-v2.js` adds launch, routes and state entries; every entry carries `value`, `evidence`
+  (file:line) and `confidence`. `harness/validator.js` assigns each entry `confirmed`, `contradicted` or
+  `cannot_verify` from one normal purchase and a textual check of the cited lines. The negative control
+  (unsigned and wrong-secret captures) runs on a separate order first, so an app that accepts forged events
+  is reported as `state_changed` without its effects being blamed on correct entries. Expected values come from the ledger and the harness's own request, not from the app.
+- Only confirmed entries reach the v1 projection used by the checker; everything else is null, so checks that
+  need it return cannot_verify. A confirmed status-value list is kept whole, never trimmed to observed values.
+- The validator drives the apps in-process, so launch entries are evidence-checked only and never confirmed.
+  No refund is made, so refund entries are never confirmed and I5 is cannot_verify under a validated mapping.
+- **Cost:** the happy path is a premise. An app whose normal purchase is broken cannot be told apart from a
+  wrong mapping; it is rejected or left insufficient. Evidence checks are textual: they show a cited line
+  mentions the identifier, not that it means what is claimed.
+
+## D15. One run, one fresh SQLite file, read through a separate read-only connection (2026-10-13)
+- `harness/run-db.js` creates a unique directory under the OS temp directory per run, and refuses if the
+  database file (or its -wal/-shm/-journal side files) already exists. The app creates and initializes the
+  file. The harness reads only through readers opened afterwards: read-only, 5 s busy timeout, tracked so
+  they can be closed before the app stops.
+- Cleanup is never recursive. It deletes the database file and SQLite side files (with retries, for
+  Windows locks), then removes the directory only if it is empty. An unexpected file, or a path that is no
+  longer the directory the run created, stops cleanup and is reported; nothing unrelated is deleted.
+  `cleanup({ keep: true })` keeps a failed run's directory for debugging (the validator tests use it when
+  `PAYPROBE_KEEP_FAILED_RUNS=1`).
+- The validator report gains `database`: caller-supplied metadata (run id, path, directory, file name,
+  creation time, `existedBefore: false`, reader settings). The validator does not re-check it. The path is
+  local and absolute and must be redacted before any public-facing output.
+- `startMerchant` takes an optional `dbPath`; the default stays `:memory:`. The concurrency scenarios are
+  unchanged and still in-memory; file-backed concurrency behaviour has not been validated.
+- **Cost:** readers depend on the app keeping the database open (WAL side files). A read must not hold a
+  transaction open, or it sees stale data; `takeSnapshot` and the validator's digest each use one short
+  transaction. A crashed process leaves its run directory behind; nothing sweeps them yet.
+
+## D16. Isolated attack runs share one lifecycle helper with validation runs (2026-10-13)
+- `startIsolatedMerchant(impl, { role })` in `test/helpers.js` creates, per call, a run database
+  (D15), a new gateway ledger and a new app instance, and opens one read-only reader after the app has
+  initialized the database. Nothing is reused between calls, so an attack run can never see the database or
+  ledger the mapping was validated on. `role` ('validation' | 'attack') is recorded, not enforced.
+- `teardown({ failed })` closes readers, then the app, then cleans up; it is idempotent. A failed run is kept
+  only when `PAYPROBE_KEEP_FAILED_RUNS=1`.
+- It lives in `test/helpers.js` because it starts the fixture apps in-process; harness modules do not import
+  `merchant/`. The separate-process runner will need its own equivalent.
+- The existing scenarios, including the concurrency ones, still call `startMerchant` with its `:memory:`
+  default and are unchanged. No attack uses isolated runs yet.
+- **Cost:** file-backed runs are slower than in-memory ones and depend on disk speed (see D15).

@@ -60,6 +60,15 @@ Known limits: I4 sees only snapshot boundaries, so transitions inside one step a
 check assumes only fulfilment changes stock between snapshots. Simulator refund behaviour differs from
 documented Razorpay behaviour: see GATEWAY_CONTRACT.md.
 
+## Phase 4 groundwork (built): mapping v2 and validator
+
+- `harness/mapping-v2.js`: schema (launch, routes, orders/payments/fulfillments/refunds/stock), shape check,
+  projection to the v1 mapping. `harness/mappings/v2/`: hand-written v2 mappings with file:line evidence.
+- `harness/validator.js`: evidence check (inside the root, line exists, mentions the identifier; denied files
+  are never read), one normal purchase through the mapped routes with snapshots and raw table digests,
+  per-entry status, verdict `validated` / `rejected` / `insufficient` / `malformed`, and a negative-control
+  result reported separately from the verdict. See D14.
+
 ## Planned (not built)
 
 - **Phase 3:** `harness/scenarios.js` (named adversarial sequences: duplicates, reordering, concurrency, tampering),
