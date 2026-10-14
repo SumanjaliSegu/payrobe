@@ -9,7 +9,7 @@
 - [x] Smoke tests for both apps (8 passing), live-key guard
 - [x] README, DECISIONS, ARCHITECTURE
 
-## Phase 2: independent invariant checker (done 2026-10-13, not committed)
+## Phase 2: independent invariant checker (done 2026-10-13, commit 8744a4b)
 - [x] Refund docs checked; findings and simulator contract in docs/GATEWAY_CONTRACT.md
 - [x] `harness/ledger.js`: independent gateway record; mock gateway writes to it; refund behaviour unchanged
 - [x] `harness/mappings/`: hand-written mappings for both fixtures
@@ -19,17 +19,22 @@
 - [ ] Decide: make mock `createRefund` follow documented rejections (GATEWAY_CONTRACT.md, "Proposed change")
 
 ## Phase 3: prove the core idea (in progress)
-- [x] Experiment 1: duplicate genuine `payment.captured`, sequential + simultaneous, 3 runs each, both apps
-      (`test/scenarios/duplicate-captured.test.js`, records in `results/`)
+- [x] Experiment 1: duplicate genuine `payment.captured`, sequential + simultaneous + barrier, 3 runs each,
+      both apps (`test/scenarios/duplicate-captured.test.js`, records in `results/`, git-ignored)
 - [x] Barrier delivery mode (`harness/delivery.js`): both requests held in the server's body parser, released
       together; a run counts as concurrent only if the server confirms both arrived and neither finished.
-      Reference: 12/12 verified-concurrent runs clean. Vulnerable: 12/12 duplicate fulfilment (4 invocations)
+      Local records up to 2026-10-14 (34 suite runs): reference 0/84 barrier runs with duplicate fulfilment, all
+      verified concurrent; vulnerable 84/84 barrier and 102/102 simultaneous runs with duplicate fulfilment
+- [x] Regression assertion: vulnerable + simultaneous must show I3 duplicate fulfilment when the server confirms overlap
 - [ ] Optional: regression assertion for vulnerable + barrier (currently observation only)
+- [ ] Reference + simultaneous never overlaps at the server (0/102); only barrier exercises reference concurrency
 - [ ] Not covered: two app processes sharing one DB file (D3)
-- [ ] Run I1-I5 after concurrent delivery batches, repeated N times (this is I6)
+- [ ] Run I1-I5 after concurrent delivery batches, repeated N times (this is I6; checker still returns cannot_verify)
 - [ ] Scenario runner: initial state → exact event sequence → invariant check → finding record
-- [ ] Scenarios: forged/replayed checkout signature (B1), amount mismatch (B2), concurrent duplicate captured (B3),
-      captured then late failed (B4), cumulative and concurrent refunds (B5)
+      (design approved 2026-10-14; not yet implemented)
+- [ ] Scenarios: forged/replayed checkout signature (B1), amount mismatch (B2), concurrent duplicate captured (B3,
+      covered by experiment 1, not yet ported to the runner), captured then late failed (B4)
+- [ ] Refund scenarios (B5): blocked until the mock gateway refund contract is decided (Phase 2 open item)
 - [ ] Each finding records initial state, event sequence, violated invariant, resulting DB state
 - [ ] Each finding reproduced 3/3 runs before it counts
 - [ ] Reference app passes every scenario (zero false positives)
@@ -62,4 +67,6 @@
 - [ ] Refund idempotency key; ambiguous gateway timeout reconciliation in the reference app
 - [ ] Multi-process concurrency mode (D3)
 - [ ] Validate event shapes against real Razorpay test-mode deliveries (needs a test account)
-- [ ] Rotate the Groq key in `ripple-complete/.env` (outside this repo)
+- [ ] Rotate the Groq API keys stored in plaintext local `.env` files of other projects (outside this repo;
+      owner's action). Checked 2026-10-14: the one project under git has no key in its history, and its remote
+      tips match that history. Whether the other, non-git copies were ever shared is not verifiable from here
