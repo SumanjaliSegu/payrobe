@@ -311,7 +311,7 @@ describe('runner: teardown and timeouts', () => {
     let target;
     const stallNext = () => { target.baseUrl = stall.baseUrl; }; // order creation reaches the app; the deliveries stall
     try {
-      const [r] = await run(dup, { mode: 'simultaneous', requestTimeoutMs: 300, startTarget: targetFactory((t) => { target = t; }) });
+      const [r] = await run(dup, { mode: 'simultaneous', requestTimeoutMs: 1000, startTarget: targetFactory((t) => { target = t; }) });
       assert.equal(r.outcome, OUTCOME.ERROR);
       assert.equal(r.error.timedOut, true);
       assert.equal(r.concurrency.deliveries[0].classification, 'timed_out_or_failed');
