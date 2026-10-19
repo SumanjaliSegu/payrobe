@@ -1,0 +1,645 @@
+{
+  "schema": "payprobe.benchmark/v1",
+  "startedAt": "2026-10-17T14:10:50.758Z",
+  "mode": "real",
+  "model": "openai/gpt-oss-120b",
+  "repetitions": 3,
+  "results": [
+    {
+      "app": "reference",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 4,
+        "proposed": 8,
+        "rejected": 0,
+        "duplicates": 0,
+        "errors": 8,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 0,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    },
+    {
+      "app": "unseen2",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 4,
+        "proposed": 8,
+        "rejected": 0,
+        "duplicates": 0,
+        "errors": 8,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 0,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    },
+    {
+      "app": "unseen",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 1,
+        "clean": 3,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 4,
+        "proposed": 8,
+        "rejected": 0,
+        "duplicates": 0,
+        "errors": 8,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 1,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    },
+    {
+      "app": "vulnerable",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 5,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 4,
+        "proposed": 8,
+        "rejected": 0,
+        "duplicates": 0,
+        "errors": 8,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 5,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    }
+  ],
+  "totals": {
+    "apps": 4,
+    "handwritten": {
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 6,
+      "controlsClean": true
+    },
+    "ai": {
+      "novelExecuted": 0,
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 0,
+      "rejected": 0,
+      "duplicates": 0
+    }
+  },
+  "llm": {
+    "calls": 32,
+    "ok": 0,
+    "failed": 32,
+    "retries": 86,
+    "pacedMs": 562856,
+    "latencyMs": 5692008,
+    "promptTokens": 24792,
+    "completionTokens": 9000,
+    "reasoningTokens": 8990,
+    "totalTokens": 33792
+  },
+  "durationMs": 5806446
+}

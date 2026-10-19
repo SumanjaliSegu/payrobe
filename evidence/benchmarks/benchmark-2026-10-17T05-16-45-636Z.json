@@ -1,0 +1,244 @@
+{
+  "schema": "payprobe.benchmark/v1",
+  "startedAt": "2026-10-17T05:16:45.636Z",
+  "mode": "deterministic-only",
+  "model": null,
+  "repetitions": 3,
+  "results": [
+    {
+      "app": "reference",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": null,
+      "falsePositives": 0,
+      "reproducedViolations": 0
+    },
+    {
+      "app": "unseen2",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": null,
+      "falsePositives": 0,
+      "reproducedViolations": 0
+    },
+    {
+      "app": "unseen",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 1,
+        "clean": 3,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": null,
+      "falsePositives": 0,
+      "reproducedViolations": 1
+    },
+    {
+      "app": "vulnerable",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 5,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          }
+        ]
+      },
+      "ai": null,
+      "falsePositives": 0,
+      "reproducedViolations": 5
+    }
+  ],
+  "totals": {
+    "apps": 4,
+    "handwritten": {
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 6,
+      "controlsClean": true
+    },
+    "ai": null
+  },
+  "llm": null,
+  "durationMs": 72740
+}

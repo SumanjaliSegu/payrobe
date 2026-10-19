@@ -1,0 +1,1265 @@
+{
+  "schema": "payprobe.benchmark/v1",
+  "startedAt": "2026-10-18T14:16:05.730Z",
+  "mode": "real",
+  "model": "openai/gpt-oss-120b",
+  "repetitions": 3,
+  "results": [
+    {
+      "app": "reference",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 3,
+        "proposed": 6,
+        "rejected": 6,
+        "duplicates": 0,
+        "errors": 0,
+        "skipped": 0,
+        "modelCalls": 6,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "rejected",
+            "title": "forge‑refund‑processed‑double‑count",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Over‑refund via interleaved refund creation and forged refund.processed webhook",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "over‑refund‑via‑amount‑mismatch‑capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "half-amount-duplicate-capture",
+            "targets": [
+              "I2",
+              "I3"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Forge double‑amount capture then legit capture to inflate stored payment amount and over‑refund",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "forge‑capture‑zero‑amount‑then‑legit‑capture‑refund‑overflow",
+            "targets": [
+              "I2",
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 0,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    },
+    {
+      "app": "unseen2",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 3,
+        "proposed": 6,
+        "rejected": 6,
+        "duplicates": 0,
+        "errors": 0,
+        "skipped": 0,
+        "modelCalls": 6,
+        "executed": 0,
+        "novel": 0,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "rejected",
+            "title": "double‑capture‑inflated‑settlement",
+            "targets": [
+              "I2"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Captured with mismatched currency",
+            "targets": [
+              "I2"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Reuse payment handle across orders to fake payment for second order",
+            "targets": [
+              "I1",
+              "I3"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "genuine-capture-with-orphan-order-ref",
+            "targets": [
+              "I1"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "forge‑capture‑extra‑settlement‑then‑refund‑both",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "inflated-settlement-then-refund",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 0,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 0
+    },
+    {
+      "app": "unseen",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 1,
+        "clean": 3,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 3,
+        "proposed": 6,
+        "rejected": 5,
+        "duplicates": 0,
+        "errors": 0,
+        "skipped": 0,
+        "modelCalls": 6,
+        "executed": 1,
+        "novel": 1,
+        "discoveredViolations": 0,
+        "clean": 1,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "status": "rejected",
+            "title": "double‑shipment via post‑capture failure reset",
+            "targets": [
+              "I3"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Cross-order captured charge without basket",
+            "targets": [
+              "I1"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Forged failed webhook reopens settled basket enabling later refund overflow",
+            "targets": [
+              "I4",
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "late-failed-then-recapture‑double‑fulfil",
+            "targets": [
+              "I3"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "over‑capture‑then‑partial‑refund‑exceeds‑original",
+            "targets": [
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "executed",
+            "title": "out‑of‑order capture then later authorization",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3",
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": {},
+            "errors": []
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 1,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 1
+    },
+    {
+      "app": "vulnerable",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 5,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 3,
+        "proposed": 6,
+        "rejected": 4,
+        "duplicates": 0,
+        "errors": 1,
+        "skipped": 0,
+        "modelCalls": 6,
+        "executed": 1,
+        "novel": 1,
+        "discoveredViolations": 0,
+        "clean": 0,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "status": "rejected",
+            "title": "Post‑capture failure reversal",
+            "targets": [
+              "I4"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "executed",
+            "title": "Forged half‑capture causing amount mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3",
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": {},
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "Forged double‑amount capture followed by genuine failure reversal",
+            "targets": [
+              "I2",
+              "I4"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "forge‑capture‑precedes‑genuine‑capture",
+            "targets": [
+              "I1"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "rejected",
+            "title": "mixed‑capture‑refund‑overflow",
+            "targets": [
+              "I3",
+              "I5"
+            ],
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": []
+          },
+          {
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": [
+              "invalid_json: model content is not a JSON object"
+            ]
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 5,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovel": 1
+    }
+  ],
+  "totals": {
+    "apps": 4,
+    "handwritten": {
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 6,
+      "controlsClean": true
+    },
+    "ai": {
+      "requestedSlots": 12,
+      "proposals": 24,
+      "modelCalls": 24,
+      "validated": 2,
+      "rejected": 21,
+      "duplicates": 0,
+      "errors": 1,
+      "skipped": 0,
+      "novelExecuted": 2,
+      "executedOnControls": 0,
+      "executedOnBuggy": 2,
+      "violations": 0,
+      "clean": 1,
+      "inconclusive": 1,
+      "falsePositivesOnControls": null,
+      "reproducedViolationsOnBuggy": 0
+    }
+  },
+  "llm": {
+    "calls": 24,
+    "ok": 23,
+    "failed": 1,
+    "failuresByCode": {
+      "invalid_json": 1
+    },
+    "retries": 1,
+    "pacedMs": 925516,
+    "latencyMs": 1006307,
+    "promptTokens": 99696,
+    "completionTokens": 24877,
+    "reasoningTokens": 17558,
+    "totalTokens": 124573
+  },
+  "llmCalls": [
+    {
+      "id": "call-21bb712a",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T13:58:19.542Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 0,
+      "latencyMs": 4851,
+      "usage": {
+        "promptTokens": 4972,
+        "completionTokens": 1630,
+        "reasoningTokens": 1212,
+        "totalTokens": 6602
+      },
+      "finishReason": "stop",
+      "outputChars": 1617,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-8fd10d7f",
+      "purpose": "attack:slot-1-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T13:58:24.396Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [
+        {
+          "attempt": 1,
+          "status": 400,
+          "message": "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.",
+          "retryAfter": null,
+          "remainingTokens": "1894",
+          "resetTokens": "45.795s",
+          "remainingRequests": "997",
+          "resetRequests": "4m19.2s",
+          "requestId": "req_01m57my66heg1s8ben48n2wapt"
+        }
+      ],
+      "retries": 1,
+      "pacedMs": 85549,
+      "latencyMs": 96139,
+      "usage": {
+        "promptTokens": 5000,
+        "completionTokens": 1674,
+        "reasoningTokens": 1214,
+        "totalTokens": 6674
+      },
+      "finishReason": "stop",
+      "outputChars": 1678,
+      "recovered": false,
+      "jsonModeFallback": true
+    },
+    {
+      "id": "call-f42ee8c4",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:00:00.532Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 49721,
+      "latencyMs": 52958,
+      "usage": {
+        "promptTokens": 4972,
+        "completionTokens": 1099,
+        "reasoningTokens": 708,
+        "totalTokens": 6071
+      },
+      "finishReason": "stop",
+      "outputChars": 1447,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-911d305f",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:00:53.498Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 40437,
+      "latencyMs": 43271,
+      "usage": {
+        "promptTokens": 5005,
+        "completionTokens": 990,
+        "reasoningTokens": 694,
+        "totalTokens": 5995
+      },
+      "finishReason": "stop",
+      "outputChars": 1134,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-14a7dde0",
+      "purpose": "attack:slot-3-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:01:36.770Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 39672,
+      "latencyMs": 42299,
+      "usage": {
+        "promptTokens": 4972,
+        "completionTokens": 949,
+        "reasoningTokens": 458,
+        "totalTokens": 5921
+      },
+      "finishReason": "stop",
+      "outputChars": 2030,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-f3e5e355",
+      "purpose": "attack:slot-3-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:02:19.066Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 54401,
+      "latencyMs": 59511,
+      "usage": {
+        "promptTokens": 5028,
+        "completionTokens": 1519,
+        "reasoningTokens": 1132,
+        "totalTokens": 6547
+      },
+      "finishReason": "stop",
+      "outputChars": 1475,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-47fefde2",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:03:35.169Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 29353,
+      "latencyMs": 33254,
+      "usage": {
+        "promptTokens": 4201,
+        "completionTokens": 1357,
+        "reasoningTokens": 1088,
+        "totalTokens": 5558
+      },
+      "finishReason": "stop",
+      "outputChars": 1134,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-ebf7c242",
+      "purpose": "attack:slot-1-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:04:08.424Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 42894,
+      "latencyMs": 45502,
+      "usage": {
+        "promptTokens": 4234,
+        "completionTokens": 762,
+        "reasoningTokens": 586,
+        "totalTokens": 4996
+      },
+      "finishReason": "stop",
+      "outputChars": 727,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-a7138f7f",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:04:53.931Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 43140,
+      "latencyMs": 45666,
+      "usage": {
+        "promptTokens": 4201,
+        "completionTokens": 750,
+        "reasoningTokens": 441,
+        "totalTokens": 4951
+      },
+      "finishReason": "stop",
+      "outputChars": 1223,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-87f6ad00",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:05:39.598Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 42896,
+      "latencyMs": 46863,
+      "usage": {
+        "promptTokens": 4374,
+        "completionTokens": 1339,
+        "reasoningTokens": 1073,
+        "totalTokens": 5713
+      },
+      "finishReason": "stop",
+      "outputChars": 1020,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-a756aba3",
+      "purpose": "attack:slot-3-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:06:26.467Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 44193,
+      "latencyMs": 48108,
+      "usage": {
+        "promptTokens": 4201,
+        "completionTokens": 1426,
+        "reasoningTokens": 1124,
+        "totalTokens": 5627
+      },
+      "finishReason": "stop",
+      "outputChars": 1239,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-5227c3fc",
+      "purpose": "attack:slot-3-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:07:14.575Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 44059,
+      "latencyMs": 46709,
+      "usage": {
+        "promptTokens": 4392,
+        "completionTokens": 811,
+        "reasoningTokens": 534,
+        "totalTokens": 5203
+      },
+      "finishReason": "stop",
+      "outputChars": 1129,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-a4c13474",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:08:17.978Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 18868,
+      "latencyMs": 22305,
+      "usage": {
+        "promptTokens": 4130,
+        "completionTokens": 1275,
+        "reasoningTokens": 989,
+        "totalTokens": 5405
+      },
+      "finishReason": "stop",
+      "outputChars": 1147,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-ef90b8a4",
+      "purpose": "attack:slot-1-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:08:40.284Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 44397,
+      "latencyMs": 47810,
+      "usage": {
+        "promptTokens": 4192,
+        "completionTokens": 1117,
+        "reasoningTokens": 890,
+        "totalTokens": 5309
+      },
+      "finishReason": "stop",
+      "outputChars": 935,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-1655302b",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:09:28.093Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 37517,
+      "latencyMs": 40039,
+      "usage": {
+        "promptTokens": 4130,
+        "completionTokens": 957,
+        "reasoningTokens": 651,
+        "totalTokens": 5087
+      },
+      "finishReason": "stop",
+      "outputChars": 1364,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-41d5a7af",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:10:08.133Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 39350,
+      "latencyMs": 42659,
+      "usage": {
+        "promptTokens": 4163,
+        "completionTokens": 1013,
+        "reasoningTokens": 737,
+        "totalTokens": 5176
+      },
+      "finishReason": "stop",
+      "outputChars": 1106,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-c7dd2262",
+      "purpose": "attack:slot-3-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:10:50.797Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 39589,
+      "latencyMs": 42364,
+      "usage": {
+        "promptTokens": 4130,
+        "completionTokens": 1004,
+        "reasoningTokens": 727,
+        "totalTokens": 5134
+      },
+      "finishReason": "stop",
+      "outputChars": 1097,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-0aeb23db",
+      "purpose": "attack:slot-3-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:11:33.166Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 42364,
+      "latencyMs": 44947,
+      "usage": {
+        "promptTokens": 4179,
+        "completionTokens": 811,
+        "reasoningTokens": 556,
+        "totalTokens": 4990
+      },
+      "finishReason": "stop",
+      "outputChars": 936,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-0d41e7e0",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:12:41.748Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 19092,
+      "latencyMs": 21916,
+      "usage": {
+        "promptTokens": 3157,
+        "completionTokens": 806,
+        "reasoningTokens": 530,
+        "totalTokens": 3963
+      },
+      "finishReason": "stop",
+      "outputChars": 998,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-a86dda99",
+      "purpose": "attack:slot-1-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:13:03.665Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 35064,
+      "latencyMs": 37224,
+      "usage": {
+        "promptTokens": 3206,
+        "completionTokens": 700,
+        "reasoningTokens": 491,
+        "totalTokens": 3906
+      },
+      "finishReason": "stop",
+      "outputChars": 784,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-c00f0b7d",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:13:43.814Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 29485,
+      "latencyMs": 31446,
+      "usage": {
+        "promptTokens": 3157,
+        "completionTokens": 442,
+        "reasoningTokens": 160,
+        "totalTokens": 3599
+      },
+      "finishReason": "stop",
+      "outputChars": 1183,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-cb7d959e",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:14:15.261Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 35065,
+      "latencyMs": 36906,
+      "usage": {
+        "promptTokens": 3330,
+        "completionTokens": 599,
+        "reasoningTokens": 334,
+        "totalTokens": 3929
+      },
+      "finishReason": "stop",
+      "outputChars": 1064,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-467501d6",
+      "purpose": "attack:slot-3-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:14:52.170Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 33345,
+      "latencyMs": 36581,
+      "usage": {
+        "promptTokens": 3157,
+        "completionTokens": 1222,
+        "reasoningTokens": 915,
+        "totalTokens": 4379
+      },
+      "finishReason": "stop",
+      "outputChars": 1244,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-0bb160cf",
+      "purpose": "attack:slot-3-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-18T14:15:28.753Z",
+      "status": "invalid_json",
+      "error": "model content is not a JSON object",
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 35065,
+      "latencyMs": 36979,
+      "usage": {
+        "promptTokens": 3213,
+        "completionTokens": 625,
+        "reasoningTokens": 314,
+        "totalTokens": 3838
+      },
+      "finishReason": "stop",
+      "outputChars": 1288,
+      "recovered": false,
+      "jsonModeFallback": false
+    }
+  ],
+  "circuitBreaker": {
+    "maxConsecutiveFailures": 4,
+    "consecutiveFailures": 1,
+    "open": false,
+    "openedAt": null,
+    "openedAfterCallId": null,
+    "lastFailureCodes": [
+      "invalid_json"
+    ]
+  },
+  "durationMs": 1084616
+}

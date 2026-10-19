@@ -1,0 +1,29 @@
+{
+  "name": "payprobe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Finds business-state bugs in payment integrations by replaying adversarial payment event sequences and inspecting the merchant's database.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start:reference": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl reference --port 3001 --db data/reference.db",
+    "start:vulnerable": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env merchant/server.js --impl vulnerable --port 3002 --db data/vulnerable.db",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\"",
+    "investigate": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js",
+    "investigate:unseen": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app unseen",
+    "investigate:reference": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app reference",
+    "investigate:vulnerable": "node --disable-warning=ExperimentalWarning bin/payprobe-investigate.js --app vulnerable",
+    "ai": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-ai.js",
+    "ai:check": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-ai.js --check",
+    "ai:demo": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-ai.js --app unseen",
+    "ai:mock": "node --disable-warning=ExperimentalWarning bin/payprobe-ai.js --app unseen --mock",
+    "bench": "node --disable-warning=ExperimentalWarning bin/payprobe-bench.js",
+    "bench:mock": "node --disable-warning=ExperimentalWarning bin/payprobe-bench.js --mock",
+    "bench:ai": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-bench.js --ai"
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  }
+}
