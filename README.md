@@ -1,23 +1,25 @@
 # PayProbe
 
-**The problem.** A payment integration can answer every webhook with `200 OK` and still corrupt business state:
-an order marked paid by a forged or mismatched event, a settled order reopened by a late failure, goods shipped
-twice, refunds exceeding what was captured. HTTP-level tests do not see this; the damage is in the database.
+**Finds the payment bugs that `200 OK` hides.** PayProbe replays adversarial Razorpay-style webhook sequences
+against a merchant app and checks the merchant's **database** against an independent gateway ledger, not its
+HTTP responses. An AI layer explains each verified finding, proposes a fix, and the deterministic harness
+proves whether the fix works.
 
-**Payment Security Intelligence.** PayProbe finds business-state bugs in payment integrations — orders marked
-paid without a real payment, wrong amounts accepted, double fulfilment, paid orders reversed by late events,
-over-refunds — by replaying adversarial payment-webhook sequences and checking the merchant's **database**
-against an independent gateway ledger, not its HTTP responses.
-
-It has an **AI layer** (Groq) that goes further: it explains each verified finding against the real source,
-**proposes a fix** and lets the deterministic harness prove whether the fix works, and it can also **design new
-attack sequences** of its own (**experimental, not yet validated**; it has not found a verified bug, see the
-results below). The rule throughout is **AI proposes, deterministic code verifies** — a model can never set or
-change an invariant verdict, and nothing is called a bug, novel, or fixed without execution evidence.
-See [BUILT_WITH_AI.md](BUILT_WITH_AI.md).
+**AI proposes, deterministic code verifies.** A model can never set or change a verdict; nothing is called a
+bug, novel, or fixed without execution evidence.
 
 > **Scope:** everything runs locally against fixture merchant apps and a **mock Razorpay gateway**. There is no
 > live Razorpay integration, no test-mode payments, no payment network traffic and no real money.
+
+## In 30 seconds
+
+| | |
+|---|---|
+| **Problem** | A payment integration can answer every webhook with `200 OK` and still corrupt business state: an order marked paid by a forged or mismatched event, a settled order reopened by a late failure, goods shipped twice, refunds exceeding what was captured. HTTP-level tests do not see this; the damage is in the database. |
+| **Approach** | Discover the app's payment flow from source → validate that map against the running app → attack isolated copies 3× each → check six business invariants (I1–I6) against an independent ledger → AI explains and proposes a patch → harness re-runs every scenario to judge it. |
+| **Verified result 1** | Deterministic benchmark: **6 violations** reproduced on the two buggy fixtures, **0 false positives** on the two correct controls (3 repetitions each, no API key). |
+| **Verified result 2** | AI fix-and-verify: **10/10** real repair attempts verified by the harness, **for one bug (I4, late `payment.failed`) in one fixture (`merchant/unseen`)**. |
+| **Not yet validated** | AI-designed attack discovery (experimental). No AI-discovered bug is claimed. |
 
 ```
  Discover ─ Understand ─ Investigate ─ Explain ─ Fix ─ Verify
@@ -26,6 +28,23 @@ See [BUILT_WITH_AI.md](BUILT_WITH_AI.md).
                                    experimental, not yet validated)
  Every AI output is a hypothesis until the harness re-runs it and the invariant checker decides.
 ```
+
+## Try it (no API key needed)
+
+Requires Node.js 22.13 or newer.
+
+```powershell
+npm install
+npm run bench                 # deterministic benchmark: 5 scenarios × 4 fixture apps, scored vs controls
+npm run investigate:unseen    # investigate an app the discoverer was not tuned to; writes a redacted report
+npm run ai:mock               # full AI pipeline with a scripted mock model, offline, clearly labelled
+npm test                      # full suite; AI tests use mocked model responses only
+npm run ai:demo               # optional, real Groq calls: needs GROQ_API_KEY in .env (see BUILT_WITH_AI.md)
+```
+
+**Report viewer.** Open `tools\report-viewer.html` in a browser (it is a single local file and makes no network
+requests) and load a report JSON: one of the files in `evidence\`, or a report you generated yourself under
+`results\`. It labels each report Real AI / Mock AI / Deterministic only.
 
 ### Results: verified vs. unverified (local fixtures)
 
@@ -54,20 +73,81 @@ them. Three real-Groq benchmark runs exist, and none validates the feature:
 
 No AI-discovered bug is claimed.
 
-### Quick start
+## Why this matters for Razorpay merchants
 
-```powershell
-npm install
-npm test                      # full suite; AI tests use mocked model responses only
-npm run bench                 # deterministic benchmark, no API key
-npm run investigate:unseen    # deterministic investigation of merchant/unseen
-npm run ai:mock               # AI pipeline with a scripted mock model, offline, clearly labelled
-npm run ai:demo               # optional, real Groq calls: needs GROQ_API_KEY in .env (see BUILT_WITH_AI.md)
-```
+Every scenario below targets a failure where the merchant's HTTP layer can look healthy while its database
+records the wrong business outcome. Each one is checked against an independent ledger of what the (mock)
+gateway actually did, never against the merchant's own `payments` table, which is the system under test's
+own claim. Invariants are defined in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#business-invariants); the
+gateway behaviour each scenario relies on, with Razorpay doc citations, is in
+[docs/GATEWAY_CONTRACT.md](docs/GATEWAY_CONTRACT.md).
 
-**Report viewer.** Open `tools\report-viewer.html` in a browser (it is a single local file and makes no network
-requests) and load a report JSON: one of the files in `evidence\`, or a report you generated yourself under
-`results\`. It labels each report Real AI / Mock AI / Deterministic only.
+| Merchant risk | Invariant | Scenario (`harness/scenarios/`) | What PayProbe has shown on local fixtures |
+|---|---|---|---|
+| **Order marked paid with someone else's payment.** A genuine checkout signature for a cheap order is replayed against an expensive one. | I1 | `cross-order-checkout-signature` | Violated on the vulnerable fixture, clean on the reference app (recorded runs, see [Runner scenarios](#runner-scenarios-testscenariosphase3-runnertestjs-sequential-isolated-file-backed-runs)). The callback route is fixture-specific and the replay is an inference |
+| **Goods shipped twice.** The same `payment.captured` webhook is delivered twice, at the same moment. | I3 (and I6 under proven overlap) | `duplicate-capture` | The test suite asserts the duplicate fulfilment on the vulnerable fixture when deliveries overlap at the server, and no violation on the reference app ([details](#evidence-so-far-duplicate-paymentcaptured-testscenariosduplicate-capturedtestjs)) |
+| **A paid order reopened.** An earlier attempt's `payment.failed` arrives after a later attempt's capture (out-of-order webhooks). | I4 | `late-failed-attempt` | The one planted flaw in `merchant/unseen`: its payment flow was discovered from source alone, the flaw reproduced 3/3, and every other scenario was clean on that app; also the bug the AI repaired 10/10 times |
+| **Refunds exceed what was captured.** Two refunds, each equal to the captured amount. | I5 | `cumulative-refund-over-capture` | The independent ledger shows refunds exceeding captured on the vulnerable fixture (3/3, asserted); correct controls reject the second refund. Carries [U]/[A] labels: **not** a claim of proven real-world money loss |
+| **Wrong amount accepted.** A genuine capture whose amount differs from the order. | I2 | `captured-amount-mismatch` | Marked **[U]**: Razorpay's documented capture rules point against this for non-partial-payment orders, so any result is conditional; to be redesigned or retired |
+
+Why the design fits payments work:
+- **Business state, not status codes.** Tests assert on the database (D4 in [DECISIONS.md](docs/DECISIONS.md)).
+- **Missing evidence is never a pass.** Each invariant returns `pass`, `violation` or `cannot_verify`;
+  inconclusive runs are never counted as clean.
+- **Concurrency is proven, not assumed.** A duplicate-delivery violation counts only when the server confirms
+  both deliveries were in flight together.
+- **Controls catch false positives.** Two correct apps run every scenario; a violation there is scored as a
+  false positive. This caught one in an early AI attack vocabulary (see below).
+- **Safe by default.** No credentials needed; the apps refuse `rzp_live_` keys and listen on `127.0.0.1` only.
+
+## How I built PayProbe with AI
+
+I built PayProbe with **Claude Code** as my coding agent, and the product itself uses an LLM (Groq) at runtime.
+The same rule governs both: **AI proposes, deterministic code verifies.** Full detail, including every model
+call recorded in the reports, is in [BUILT_WITH_AI.md](BUILT_WITH_AI.md).
+
+**Working with Claude Code.** While developing, the agent worked in the repository under rules I set: never read
+the seeded-bug answer key (`docs/SEEDED_BUGS.md`), preserve existing behaviour and assertions, and report
+results honestly. Examples:
+- **Evidence-first debugging.** A flaky runner test was not fixed by guessing: the failure was reproduced under
+  parallel load (5/20), the cause proved with a dose-response experiment (delay 0/250/400 ms → 1/3, 2/3, 3/3
+  failures), then a one-line test-only change was verified with 20 parallel runs and three full-suite runs.
+- **Verified UI.** The report viewer was checked in headless Chrome against the source JSON (219 checks), plus
+  injection probes, zero network requests and zero console errors.
+- **Guardrails tested alongside features.** The AI layer was built mock-first, then against real Groq calls,
+  with tests for each guardrail (`test/ai-llm.test.js`, `test/ai-guardrails.test.js`, `test/ai-repair.test.js`).
+
+**Runtime AI, and what stops it from lying.**
+
+| AI role | Code | What deterministic code enforces |
+|---|---|---|
+| Explain a finding | `harness/ai/analyst.js` | Strict output schema; every cited line range must exist in an approved file and is quoted from it; the verdict is copied from the harness, never from the model |
+| Investigate | `harness/ai/agent.js`, `tools.js` | Tool allowlist (approved scenario runs and source reads only: no shell, network, writes or code execution); step and run limits; a hypothesis without run evidence is downgraded to "unresolved" |
+| Propose a fix | `harness/ai/repair.js` | Patch may edit only `app.js`, cannot touch signature verification or secrets, and cannot add imports, network, fs, eval and similar constructs; applied only to a disposable copy |
+| Verify the fix | `harness/ai/repair.js` + `runner.js` | Baseline reproduced first; **fixed** = target scenario clean in every repetition **and** no other scenario regressed; original source hashed before and after |
+| Design new attacks (experimental) | `harness/ai/attacks.js`, `attack-loop.js` | Model fills a declarative plan, never code; validator checks every field and the gateway-ledger rules; duplicates of hand-written scenarios rejected |
+
+**Measured results** (real Groq calls, `openai/gpt-oss-120b`, free tier):
+- **10/10** real repair attempts verified (4 repair loops + 6 evaluation trials), **for the I4 late-failure bug
+  in `merchant/unseen` only**. Each repair loop took the target from 3/3 violated to 0/3, changed no other
+  scenario, and left the original app byte-identical. The accepted patch is in
+  [BUILT_WITH_AI.md](BUILT_WITH_AI.md#recorded-results-local-fixture-merchantunseen-real-groq-calls).
+- Final demo run: 7 model calls, 26,815 tokens, 0 failures; about 161 s of it was free-tier rate-limit pacing.
+- AI-designed attacks: 3 real runs, none validates the feature (see [results](#results-verified-vs-unverified-local-fixtures)).
+
+**What went wrong, and what I changed.** The control apps caught a false positive in an early attack
+vocabulary: a "forged" event with a *valid* signature is indistinguishable from a genuine one, so it flagged
+every app. The fix was to strengthen the guardrail (a forged event must be unsigned or wrong-secret), not to
+relax the check. Groq's JSON mode rejected some agent output, so recovery and retry were added. The agent once
+concluded from source reading alone, so an evidence gate now sends unevidenced conclusions back. Two AI
+benchmark runs failed without recording why, so per-call diagnostics and a circuit breaker were added.
+
+**Current limitations.**
+- The repair loop has one real target. Success there is not a claim about arbitrary codebases.
+- AI attack discovery is unvalidated: 2 of 24 proposals passed validation in the only completed run, with no
+  violation and no run on a control app. Rejection-reason recording was added afterwards and not yet exercised.
+- The validated patch runs in-process inside the disposable copy; static validation is not an OS-level sandbox.
+- Mock gateway only; event shapes are not validated against real Razorpay deliveries.
 
 ## Status (honest)
 
@@ -81,6 +161,7 @@ requests) and load a report JSON: one of the files in `evidence\`, or a report y
 | Isolated per-run database and app (`harness/run-db.js`, `startIsolatedMerchant`) | Built; used by the validator, isolated-run, runner and investigator tests. The duplicate-captured scenario stays in-memory |
 | Mapping discovery from source (`harness/discovery.js`) | Built: deterministic, evidence-backed, general heuristics; no answer key. Confirmed by the validator on reference, vulnerable and an independently-named **unseen** app |
 | Autonomous investigator (`harness/investigator.js`, `bin/payprobe-investigate.js`) | Built: bounded staged pipeline (discover → validate → select → execute → classify → report), deterministic offline mode, optional LLM narration hook, redacted JSON/Markdown reports. See below |
+| AI layer (`harness/ai/`) | Analyst, agent and fix-and-verify built; real-Groq evidence is for `merchant/unseen` only. AI-designed attacks experimental, not validated |
 | Real Razorpay integration / test-mode payments | **None.** Everything uses local isolated apps and the mock gateway; no network, no real keys |
 
 ### Evidence so far: duplicate `payment.captured` (`test/scenarios/duplicate-captured.test.js`)
@@ -190,34 +271,6 @@ Discovery's request/response field names follow a convention the validator confi
 from it leaves those entries `cannot_verify`, not wrong. A clean or inconclusive result is not proof an app is
 correct — it is the outcome of the scenarios actually run under their stated contracts. Success on this small
 local benchmark does not prove universal detection or real-world exploitability.
-
-## Development timeline
-
-The table lists this repository's commits as recorded by Git (author and committer dates are identical; times
-are IST, UTC+05:30).
-
-| Commit date | Commit | Milestone |
-|---|---|---|
-| 2026-10-13 19:41 | `09ae8a7` | Foundation: reference and vulnerable merchant apps, mock gateway, signed event builder, smoke tests |
-| 2026-10-13 20:01 | `8744a4b` | Independent invariant checker |
-| 2026-10-13 20:56 | `ece4461` | Duplicate-payment concurrency test |
-| 2026-10-14 13:36 | `4df3071` | Mapping v2, mapping validator, isolated run databases |
-| 2026-10-14 14:19 | `b133c52` | README/TODO reconciled with evidence |
-| 2026-10-14 23:56 | `8eb5075` | Autonomous investigator |
-| 2026-10-16 21:52 | `436c6ea` | Report viewer UI |
-| 2026-10-18 19:11 | `3b96b4a` | AI layer (analyst, agent, AI fix-and-verify, AI attacks), benchmark, report viewer AI section |
-
-What these dates do and do not show:
-- **Commit dates are not independent proof** of when the work was done or how many hours it took. They are set
-  by the developer's machine, and this repository does not record working hours.
-- Work is not always committed the day it is done. The reports in [`evidence/`](evidence/MANIFEST.md) dated
-  2026-10-16 (AI repair runs) and 2026-10-17 (AI benchmark runs) show the AI layer already running on those days;
-  it was committed in one commit on 2026-10-18. Their timestamps were written by the local machine, so they are
-  consistent with these dates but not independent proof of them.
-- There are no commits dated 2026-10-15 or 2026-10-17.
-- This GitHub repository was created on 2026-10-18 and the existing history was pushed to it then. According
-  to the local Git push log, an earlier repository at the same address received the pushes of 2026-10-13 to
-  2026-10-16.
 
 ## Setup on Windows
 
