@@ -1,0 +1,406 @@
+{
+  "schema": "payprobe.benchmark/v1",
+  "status": "completed",
+  "startedAt": "2026-10-19T12:21:38.114Z",
+  "updatedAt": "2026-10-19T12:29:16.674Z",
+  "completedAt": "2026-10-19T12:29:16.674Z",
+  "appsRequested": [
+    "reference"
+  ],
+  "appsCompleted": [
+    "reference"
+  ],
+  "error": null,
+  "mode": "real",
+  "model": "openai/gpt-oss-120b",
+  "repetitions": 3,
+  "results": [
+    {
+      "app": "reference",
+      "role": "control",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 0,
+        "clean": 4,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "clean",
+            "reproduced": "0/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "inconclusive",
+            "reproduced": "0/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 2,
+        "proposed": 3,
+        "rejected": 0,
+        "duplicates": 0,
+        "errors": 2,
+        "skipped": 0,
+        "modelCalls": 3,
+        "executed": 1,
+        "novel": 1,
+        "rediscoveries": 0,
+        "discoveredViolations": 0,
+        "novelViolations": 0,
+        "rediscoveredViolations": 0,
+        "blind": true,
+        "clean": 0,
+        "inconclusive": 1,
+        "detail": [
+          {
+            "slot": 1,
+            "attempt": 1,
+            "callId": "call-3e0a9dc8",
+            "status": "executed",
+            "title": "Forge a captured webhook with inflated amount to bypass amount check and mark order paid",
+            "targets": [
+              "I1",
+              "I2"
+            ],
+            "plan": {
+              "title": "Forge a captured webhook with inflated amount to bypass amount check and mark order paid",
+              "targets": [
+                "I1",
+                "I2"
+              ],
+              "orders": [
+                {
+                  "ref": "o1",
+                  "sku": "TSHIRT",
+                  "quantity": 1
+                }
+              ],
+              "payments": [
+                {
+                  "ref": "p1"
+                }
+              ],
+              "steps": [
+                {
+                  "action": "create_order",
+                  "order": "o1"
+                },
+                {
+                  "action": "deliver_webhook",
+                  "order": "o1",
+                  "payment": "p1",
+                  "authenticity": "forged",
+                  "signing": "unsigned",
+                  "event": "payment.captured",
+                  "amount": "double"
+                }
+              ]
+            },
+            "fingerprint": "C(o0:TSHIRTx1) W(fu,captured,o0,p0,double)",
+            "novel": true,
+            "rediscovery": false,
+            "outcome": "inconclusive",
+            "reproduced": "0/3",
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": {},
+            "errors": []
+          },
+          {
+            "slot": 2,
+            "attempt": 1,
+            "callId": "call-b73bc42d",
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "plan": null,
+            "fingerprint": null,
+            "novel": false,
+            "rediscovery": false,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": [
+              "rate_limited: Groq returned HTTP 429 after 4 attempt(s) (retry-after: 2013, reset-tokens: 1ms)"
+            ]
+          },
+          {
+            "slot": 2,
+            "attempt": 2,
+            "callId": "call-8fadf87f",
+            "status": "error",
+            "title": null,
+            "targets": null,
+            "plan": null,
+            "fingerprint": null,
+            "novel": false,
+            "rediscovery": false,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": [
+              "rate_limited: Groq returned HTTP 429 after 4 attempt(s) (retry-after: 1847, reset-tokens: 1ms)"
+            ]
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 0,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 0,
+      "aiNovelViolations": 0,
+      "aiRediscoveredViolations": 0,
+      "aiViolatedInvariants": [],
+      "aiNovel": 1
+    }
+  ],
+  "totals": {
+    "apps": 1,
+    "handwritten": {
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 0,
+      "controlsClean": true
+    },
+    "ai": {
+      "blind": true,
+      "requestedSlots": 2,
+      "proposals": 3,
+      "modelCalls": 3,
+      "validated": 1,
+      "rejected": 0,
+      "duplicates": 0,
+      "errors": 2,
+      "skipped": 0,
+      "novelExecuted": 1,
+      "executedOnControls": 1,
+      "executedOnBuggy": 0,
+      "violations": 0,
+      "clean": 0,
+      "inconclusive": 1,
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": null,
+      "rediscoveriesExecuted": 0,
+      "novelViolationsOnBuggy": null,
+      "rediscoveredViolationsOnBuggy": null,
+      "violatedInvariantsOnBuggy": {}
+    }
+  },
+  "llm": {
+    "calls": 3,
+    "ok": 1,
+    "failed": 2,
+    "failuresByCode": {
+      "rate_limited": 2
+    },
+    "retries": 6,
+    "pacedMs": 33531,
+    "latencyMs": 427093,
+    "promptTokens": 4852,
+    "completionTokens": 429,
+    "reasoningTokens": 231,
+    "totalTokens": 5281
+  },
+  "llmCalls": [
+    {
+      "id": "call-3e0a9dc8",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T12:22:04.070Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 0,
+      "latencyMs": 2384,
+      "usage": {
+        "promptTokens": 4852,
+        "completionTokens": 429,
+        "reasoningTokens": 231,
+        "totalTokens": 5281
+      },
+      "finishReason": "stop",
+      "outputChars": 751,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-b73bc42d",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T12:22:11.960Z",
+      "status": "rate_limited",
+      "error": "Groq returned HTTP 429 after 4 attempt(s) (retry-after: 2013, reset-tokens: 1ms)",
+      "httpStatus": 429,
+      "httpEvents": [
+        {
+          "attempt": 1,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199910, Requested 5193. Please try again in 36m44.496s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "2205",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "999",
+          "resetRequests": "1m26.4s",
+          "requestId": "req_01m5a1tgypeq3bze8wxnd6hbx3"
+        },
+        {
+          "attempt": 2,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199759, Requested 5210. Please try again in 35m46.607999999s. Need more tokens? Upgrade to Dev Tier today at ht…",
+          "retryAfter": "2147",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a1wgjwe0v8ab5vzdhfpj53"
+        },
+        {
+          "attempt": 3,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199608, Requested 5281. Please try again in 35m12.048s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "2113",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a1yg78eqyv05btkfawaps1"
+        },
+        {
+          "attempt": 4,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199457, Requested 5201. Please try again in 33m32.256s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "2013",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a20fvzexgtznbcs2kx5hyr"
+        }
+      ],
+      "retries": 3,
+      "pacedMs": 33531,
+      "latencyMs": 229155,
+      "usage": null,
+      "finishReason": null,
+      "outputChars": null,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-8fadf87f",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T12:26:01.109Z",
+      "status": "rate_limited",
+      "error": "Groq returned HTTP 429 after 4 attempt(s) (retry-after: 1847, reset-tokens: 1ms)",
+      "httpStatus": 429,
+      "httpEvents": [
+        {
+          "attempt": 1,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199457, Requested 5267. Please try again in 34m0.767999999s. Need more tokens? Upgrade to Dev Tier today at htt…",
+          "retryAfter": "2041",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a20fzxefh884jvtcthwxjc"
+        },
+        {
+          "attempt": 2,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199306, Requested 5270. Please try again in 32m56.832s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "1977",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a22fj3en7v06z6k1nrvc9v"
+        },
+        {
+          "attempt": 3,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199155, Requested 5253. Please try again in 31m44.256s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "1905",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a24f6men1rdbsmng7k3yhw"
+        },
+        {
+          "attempt": 4,
+          "status": 429,
+          "message": "Rate limit reached for model `openai/gpt-oss-120b` in organization `[REDACTED]` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199005, Requested 5269. Please try again in 30m46.368s. Need more tokens? Upgrade to Dev Tier today at https://…",
+          "retryAfter": "1847",
+          "remainingTokens": "8000",
+          "resetTokens": "1ms",
+          "remainingRequests": "1000",
+          "resetRequests": "1ms",
+          "requestId": "req_01m5a26etzem0tb0t1e8xg5mxf"
+        }
+      ],
+      "retries": 3,
+      "pacedMs": 0,
+      "latencyMs": 195554,
+      "usage": null,
+      "finishReason": null,
+      "outputChars": null,
+      "recovered": false,
+      "jsonModeFallback": false
+    }
+  ],
+  "circuitBreaker": {
+    "maxConsecutiveFailures": 4,
+    "consecutiveFailures": 2,
+    "open": false,
+    "openedAt": null,
+    "openedAfterCallId": null,
+    "lastFailureCodes": [
+      "rate_limited",
+      "rate_limited"
+    ]
+  },
+  "durationMs": 458564
+}

@@ -32,7 +32,7 @@ no real payments, no real money. A clean result on a fixture is not proof of pro
 | Discover / Understand | `harness/discovery.js`, `validator.js`, `runner.js` (existing) | nothing | mapping validated before any attack; every scenario 3× in fresh isolated apps |
 | Explain | `harness/ai/analyst.js` | what happened, payment/business impact, root cause, remediation, uncertainty, confidence | strict JSON schema (unknown keys rejected); every cited line range must exist in an approved file and is quoted from the real file; verdict copied from the deterministic finding, never from the model; one corrective retry, then "rejected" |
 | Investigate | `harness/ai/agent.js`, `tools.js` | picks the next action each step from real observations: re-run an approved scenario, read approved source, or finish with hypotheses | tool allowlist (no shell, no network, no file writes, no code execution); argument schemas; scenario allowlist; 3 runs, 6 steps, wall-clock and invalid-output limits; a hypothesis can be "supported/refuted" only if it cites a scenario-run observation, otherwise code downgrades it to "unresolved" |
-| Design attacks (**experimental, not validated**; see the benchmark below) | `harness/ai/attacks.js`, `attack-loop.js` | proposes NEW webhook sequences (not copies of the hand-written scenarios) as a declarative plan: orders + a step list from an allowlisted event vocabulary | the model fills a strict schema, never writes code; a deterministic validator checks every field, the SKU allowlist, ordering, sizes and the gateway-ledger rules (a genuine event must be validly signed and keep one order/amount; a forged event must be unsigned or wrong-secret); a fingerprint rejects rebuilds of the hand-written scenarios and of earlier proposals; accepted plans compile to ordinary scenarios run in isolation; the independent checker decides the outcome; "novel" needs a non-duplicate plan and "discovered" needs a reproduced violation |
+| Design attacks (**experimental**: one blind rediscovery, no novel violation; see the benchmark below) | `harness/ai/attacks.js`, `attack-loop.js` | proposes webhook and refund sequences as a declarative plan: orders + a step list from an allowlisted vocabulary (`create_order`, `deliver_webhook`, `request_refund`) | the model fills a strict schema, never writes code; a deterministic validator checks every field, the ref name format, the SKU allowlist, ordering, sizes and the gateway-ledger rules (a genuine event must be validly signed and keep one order/amount; a forged event must be unsigned or wrong-secret; a refund needs an earlier genuine full capture and never exceeds one capture on its own); a fingerprint marks rebuilds of the hand-written scenarios and of earlier proposals; accepted plans compile to ordinary scenarios run in isolation; the independent checker decides the outcome; "novel" needs a plan that matches no hand-written scenario, and "discovered" needs a violation reproduced in every repetition |
 | Fix | `harness/ai/repair.js` | minimal patch as find/replace edits, with rationale and cited evidence | edits only `app.js`; unique anchors; size limits; may not touch signature verification, secrets or exports; may not add require/import, process, global, network, fs, crypto, timers, loops, await, eval, raw `db.exec`, destructive SQL or escape sequences; must compile |
 | Verify | `harness/ai/repair.js` + `runner.js` | nothing | baseline reproduced on the original first; patch applied only to a disposable copy under `data/ai-repairs/` (git-ignored, removed afterwards); every approved scenario re-run; **fixed** = target scenario clean in every repetition (its payment-liveness preconditions included) **and** no other scenario regressed; original source tree hashed before/after |
 | Evaluate | `harness/ai/pipeline.js` | — | `--eval-trials N` repeats the full repair loop independently and reports the success rate |
@@ -71,8 +71,9 @@ count also includes one real run without a repair (`unseen-2026-10-16T17-40-36-2
 |---|---|
 | Deterministic baseline | `late-failed-attempt` violates **I4** (paid order reversed) in 3/3 runs, with I3 (fulfilled but not paid) as a side effect; 3 other scenarios clean, refund scenario inconclusive |
 | AI analyst | accepted in 5/5 real runs; root cause located in `onFailed`, which reopens the basket without checking whether it is settled; every citation verified against the real file |
-| AI repair loops | **10 real repair loops, 10 verified, all on the first attempt**: each time the target went from 3/3 violated to 0/3, no other scenario changed, the original app was byte-identical afterwards |
-| Evaluation runs | two runs with `--eval-trials 3`: **3/3** and **3/3** independent repair trials verified |
+| AI repair loops | **4 real repair loops, 4 verified, each on the first attempt**: each report records the target going from 3/3 violated to 0/3, no other scenario changed, and the original app byte-identical afterwards |
+| Evaluation runs | two runs with `--eval-trials 3`: **3/3** and **3/3** independent repair trials verified. Each trial records `verified`, `attemptsUsed: 1` and `originalUnchanged: true`; the per-scenario 3/3 → 0/3 detail is not recorded for trials |
+| Total | **10/10** real repair attempts verified (4 loops + 6 trials), for this one bug in this one fixture |
 | Agent (final demo run, [`unseen-2026-10-16T18-16-41-085Z.json`](evidence/investigations/unseen-2026-10-16T18-16-41-085Z.json)) | read source → ran `late-failed-attempt` (violation reproduced) → ran `captured-amount-mismatch` as a control (clean) → finished; 2 hypotheses "supported" with its own execution evidence, 2 claims downgraded by code to "unresolved" for lacking run evidence, 1 left unresolved |
 | Cost of the final demo run | 7 model calls, 26,815 tokens, 0 failures; 161 s of the run was rate-limit pacing on the free tier |
 
@@ -107,13 +108,75 @@ scenarios. Counts are reported as-is, with rejected and duplicate proposals show
 
 - **Deterministic** (`npm run bench`, no key, 3 repetitions/scenario): across the 4 fixtures, the hand-written
   scenarios reproduced **6 violations on the two buggy apps** (`unseen` 1, `vulnerable` 5) and produced
-  **0 false positives on the two control apps** (`reference`, `unseen2` — all clean). Fully reproducible.
+  **0 false positives on the two control apps** (`reference`, `unseen2`: 4 clean and 1 inconclusive each; the
+  inconclusive one is the refund scenario, see below). Fully reproducible.
   Report: [`benchmark-2026-10-17T05-16-45-636Z.json`](evidence/benchmarks/benchmark-2026-10-17T05-16-45-636Z.json).
-- **AI-designed attacks** (`npm run bench:ai`, real Groq): **not yet validated; no AI-discovered bug is
-  claimed.** Three real runs exist (copies in [`evidence/benchmarks/`](evidence/MANIFEST.md#benchmarks-evidencebenchmarks)). Two failed with no successful model call; the
-  third completed its model calls, but only 2 of 24 proposals passed validation, neither reproduced a violation,
-  and none ran on a control app, so false positives are unmeasured. Counts and diagnostics are in the
-  [README](README.md#results-verified-vs-unverified-local-fixtures).
+- **AI-designed attacks, non-blind** (`npm run bench:ai`, real Groq): three runs in
+  [`evidence/benchmarks/`](evidence/MANIFEST.md#benchmarks-evidencebenchmarks). Two failed with no successful
+  model call; the third completed its model calls, but only 2 of 24 proposals passed validation, neither
+  reproduced a violation, and none ran on a control app, so false positives are unmeasured.
+- **AI-designed attacks, blind** (`npm run bench:ai:blind`, real Groq): one **rediscovery** of the hand-written
+  refund-over-capture attack, no novel violation, no conclusive control result. Details below.
+
+### Blind attack-discovery evaluation
+
+**Why blind.** In the non-blind mode the attack designer is shown the deterministic findings and a list of the
+hand-written scenarios to avoid. That is useful for finding new sequences, but it cannot measure whether the
+model can find a bug on its own. In blind mode (`--blind`):
+- every app is presented as `target`, so the model is not told which app it is attacking;
+- the source is shown with every comment removed, keeping line numbers;
+- the findings list is empty and the known-scenario list is `none`;
+- the planning instructions are identical for every app.
+
+Automated tests (`test/ai-blind-prompt.test.js`) build the blind prompts for all four fixtures, including the
+corrective-retry prompt, and check that none of them contains an app name, role or answer-key wording, a
+scenario name, a finding, or any original source comment. The benchmark reports record per-call metadata
+(tokens, status, latency), not prompt text or prompt hashes, so what each real run sent is established by the
+code version and these tests, not by a prompt log.
+
+**Scoring.** A plan whose fingerprint matches a hand-written scenario still runs, because the model could not
+have copied it, but it counts as a **rediscovery**, never as novel. Repeating its own earlier plan is a duplicate
+and does not run. The verdict comes only from execution: the target invariant must be violated in every
+repetition with clean cleanup.
+
+**Results** (real Groq, `openai/gpt-oss-120b`, 3 repetitions; copies in `evidence/benchmarks/`, listed with hashes
+in the [manifest](evidence/MANIFEST.md#benchmarks-evidencebenchmarks)):
+
+| Report | App | Model calls | Outcome |
+|---|---|---|---|
+| [`benchmark-2026-10-19T11-56-22-048Z.json`](evidence/benchmarks/benchmark-2026-10-19T11-56-22-048Z.json) | `vulnerable` | 4 ok | 2 rejected by the validator (`steps[0].order: expected string`), then corrected. **Rediscovery:** genuine full capture followed by two full refunds, the same fingerprint as `cumulative-refund-over-capture`; **I5 violated 3/3** (`gateway_refunds_exceed_captured`). **Novel:** forged wrong-secret double-amount capture, then the genuine capture: **clean 3/3** |
+| [`benchmark-2026-10-19T12-21-38-114Z.redacted.json`](evidence/benchmarks/benchmark-2026-10-19T12-21-38-114Z.redacted.json) (Groq organization ID redacted) | `reference` | 1 ok, 2 rate-limited | 1 plan executed (forged unsigned double-amount capture): **inconclusive**, because the app rejected the forged event and the targeted checks had nothing to check |
+
+Both reports have `status: "completed"`: the benchmark finished processing the app and saved its report. That
+status does not mean every attack slot succeeded; the reference run's second slot failed on both attempts.
+
+The I5 verdict is decided from the independent gateway ledger. The saved report keeps the verdict and the
+violation kind, but **no amounts or HTTP responses**. The figures that follow come from a **later local
+re-execution** of the recorded plan (no model call), not from the saved report: refunds answered `201`, `201` and
+₹998 refunded against ₹499 captured on `vulnerable`; `201`, `409` on `reference`. The original reports are
+unchanged.
+
+**What this shows and what it does not.**
+- Shows: without being given the attack, the findings or the app's identity, the model produced a valid plan
+  that the harness confirmed as an I5 violation.
+- Does not show: a novel attack, a new bug, a false-positive rate (no conclusive AI result on a control), or a
+  success rate (one buggy-app run with 2 slots).
+- Caveat: the vocabulary is small and the prompt defines I5 as "refunds never exceed captured", so two full
+  refunds after one capture is close to the most obvious test of it.
+
+**What went wrong on the way.**
+- Until a **refund action** was added to the plan vocabulary, the model could not issue refunds, so I5 was
+  unreachable and plans targeting it came back inconclusive.
+- A leak audit before counting any result found that the prompt still said `App: vulnerable` and included
+  source comments that say whether a fixture is meant to be correct. Two blind runs made before the fix
+  (`2026-10-19T09-10-06-439Z`, `10-04-18-988Z`; no violations, cut short by rate limits) are **not counted**,
+  and their reports are kept locally, not published.
+- 3 of the 4 rejections in those two earlier runs were refs that did not match the required pattern; the prompt
+  now states the exact format with valid and invalid examples. The validator was not relaxed.
+- Groq's free tier allows this model 200,000 tokens per day. Runs hit that limit (HTTP 429, `retry-after` up to
+  2,250 s, about 37 minutes), so the counted runs were done one app at a time with 2 attack slots each.
+- A run was killed for low memory and saved nothing, because the report was written only at the end. Reports are
+  now saved at the start and after each app; `startedAt` is the real start time, and `completedAt` is separate.
 
 An important honest note from building this: the control apps caught a false positive in an early version of the
 attack vocabulary — a "forged" event delivered with a *valid* signature is indistinguishable from a genuine one
@@ -130,12 +193,13 @@ model; they do not change how proposals are validated or how outcomes are judged
 
 | Behaviour | What it does | Unit tests | Seen in a real run |
 |---|---|---|---|
-| Circuit breaker | `npm run bench:ai` stops calling the model after 4 consecutive failed calls, whatever the cause (e.g. 429/5xx after retries, invalid JSON, timeouts); the run continues without the model and still writes its report, with the state in `circuitBreaker` | Yes, with a fake transport and a mock model (`test/ai-llm.test.js`, `test/ai-attacks.test.js`) | Active in the 2026-10-18 run but **never opened** (1 failed call in total), so opening is **not demonstrated** in a real run |
+| Circuit breaker | `npm run bench:ai` stops calling the model after 4 consecutive failed calls, whatever the cause (e.g. 429/5xx after retries, invalid JSON, timeouts); the run continues without the model and still writes its report, with the state in `circuitBreaker` | Yes, with a fake transport and a mock model (`test/ai-llm.test.js`, `test/ai-attacks.test.js`) | Never opened in the 2026-10-18 run. **Opened** after 4 rate-limited calls in the blind run `2026-10-19T09-10-06-439Z` (kept locally, not published), which skipped its remaining slots and still wrote its report |
 | Per-call log `llmCalls` | one entry per model call: purpose, model, status / failure code, HTTP status, retries, pacing, latency, token usage, finish reason, JSON-mode recovery flags; no prompt or output text | Yes (`test/ai-llm.test.js`: no prompt previews, no key) | Yes: 24 entries in the 2026-10-18 report |
-| `httpEvents` | per call, every non-2xx response: status, a short provider message with the key redacted, `retry-after`, `x-ratelimit-*` remaining/reset values and the request id; nothing from the request | Yes, for HTTP 429 and 503 with a fake transport | One HTTP 400 (`json_validate_failed`) event in the 2026-10-18 run; **no 429 or 5xx occurred**, so those paths are not demonstrated in a real run |
+| `httpEvents` | per call, every non-2xx response: status, a short provider message with the key redacted, `retry-after`, `x-ratelimit-*` remaining/reset values and the request id; nothing from the request | Yes, for HTTP 429 and 503 with a fake transport | One HTTP 400 (`json_validate_failed`) event in the 2026-10-18 run. HTTP 429 events (Groq's daily token limit) were recorded in the 2026-10-19 blind runs, including the published reference report (organization ID redacted); **no 5xx has occurred** in a real run |
 | Unmeasured = `null` | `totals.ai.falsePositivesOnControls` and `reproducedViolationsOnBuggy` are `null` when no attack ran on those apps (the CLI prints "unmeasured"), with denominators alongside: `executedOnControls`, `executedOnBuggy`, `validated`, `errors`, `skipped`, `modelCalls` | **No automated test** | Yes: `falsePositivesOnControls` is `null` in the 2026-10-18 report |
-| Skipped slots | once the breaker is open, remaining attack slots are recorded as `skipped` (counted separately, not as model failures or as clean) | Yes, with a mock model (`test/ai-attacks.test.js`) | No: nothing was skipped in the 2026-10-18 run |
-| Rejection reasons | the validator's messages for `rejected` proposals (and the breaker's reason for `skipped` ones) are kept in the report's `detail[].errors`; before this, only `error` proposals kept them | **No automated test** | **Not yet demonstrated.** Added after the 2026-10-18 run, which is why that run has no rejection reasons |
+| Skipped slots | once the breaker is open, remaining attack slots are recorded as `skipped` (counted separately, not as model failures or as clean) | Yes, with a mock model (`test/ai-attacks.test.js`) | Not in the 2026-10-18 run; 4 slots skipped in the blind run `2026-10-19T09-10-06-439Z` (kept locally, not published) |
+| Rejection reasons | the validator's messages for `rejected` proposals (and the breaker's reason for `skipped` ones) are kept in the report's `detail[].errors`; before this, only `error` proposals kept them | **No automated test** of the report field | Recorded in the published blind report `2026-10-19T11-56-22-048Z` (`steps[0].order: expected string`). Added after the 2026-10-18 run, which is why that run has none |
+| Per-app saving | the report file is written at the start and after each app (`status`: `running` → `partial` → `completed`, or `failed` / `interrupted`), never replacing another run's file. `completed` means every requested app was processed and saved, not that every AI attack slot succeeded | Yes (`test/bench-report.test.js`; the Ctrl+C path is not tested) | Used by the published blind runs `11-56-22-048Z` and `12-21-38-114Z` |
 
 ## How to run (Windows, PowerShell, from the `payprobe` folder)
 
@@ -150,7 +214,8 @@ npm run ai -- --app unseen --eval-trials 3     # plus 3 independent repair trial
 npm run ai -- --app unseen2                    # correct app: no violation, so nothing to repair
 npm run ai:mock                                # offline, scripted mock model, clearly labelled
 npm run bench                                   # reproducible benchmark, deterministic (no key)
-npm run bench:ai                               # plus real AI-designed attacks (experimental, not yet validated)
+npm run bench:ai                               # plus real AI-designed attacks (experimental)
+npm run bench:ai:blind -- --apps vulnerable --attack-count 2   # blind evaluation, one app per run (experimental)
 npm test                                       # full suite; AI tests use mocked model responses only
 ```
 
@@ -160,8 +225,12 @@ the published reports in `evidence\investigations\`.
 ## Development: how an AI coding agent was used
 
 PayProbe was built with an AI coding agent (Claude Code) working in the repository under explicit rules from the
-developer (no state-changing Git operations by the agent, never read the seeded-bug answer key, preserve existing behaviour and
-assertions, report results honestly). Concrete examples from this project:
+developer: Git operations and publishing stay with the developer (the agent ran Git commands only when explicitly
+asked), never read the seeded-bug answer key, preserve existing behaviour and assertions, and report results
+honestly. The agent wrote and edited code and tests, ran the suite and benchmarks,
+and reported the results; the developer reviewed the changes and decided what to commit. Its claims were treated
+like model output at runtime: a change counted only when the tests and the harness confirmed it. Concrete
+examples from this project:
 
 - **Evidence-first debugging.** A flaky runner test was not "fixed" by guessing: the agent traced the two coupled
   timeouts, injected diagnostics from outside the repo, reproduced the failure under parallel load (5/20), proved
@@ -174,6 +243,14 @@ assertions, report results honestly). Concrete examples from this project:
   guardrail written alongside: `test/ai-llm.test.js`, `test/ai-guardrails.test.js`, `test/ai-repair.test.js`.
 - **Real calls, recorded.** Model choice, JSON-mode quirks (`failed_generation` recovery) and free-tier pacing were
   discovered from real Groq responses during development and are covered by tests with a fake transport.
+- **Auditing an evaluation before believing it.** Before counting any blind attack result, the agent checked what
+  the prompt actually contained, found the app-identity leak described above, fixed it, and added leak tests.
+  After the counted runs it compared the violating plan's fingerprint with the hand-written scenario and
+  reported it as a rediscovery rather than a discovery.
+- **Agent mistakes, corrected.** The agent once stated that the attack loop had no retry when it already had one
+  (the real problem was that the retry asked for a different plan instead of a corrected one); this was
+  corrected after reading the code, and the retry was changed to echo the validator's errors and the rejected
+  plan back to the model.
 
 ## Limitations
 
@@ -184,5 +261,11 @@ assertions, report results honestly). Concrete examples from this project:
   constructs listed above, but it is not an OS-level sandbox.
 - The repair loop has been exercised on one real target (the I4 late-failure bug in `merchant/unseen`). Success
   there is not a claim about arbitrary codebases.
-- Free-tier rate limits make a full run take minutes (pacing is recorded in each report). Model availability on
-  Groq can change; the client picks from a preference list at runtime.
+- Free-tier rate limits make a full run take minutes (pacing is recorded in each report), and the daily token
+  limit can stop a benchmark partway. Model availability on Groq can change; the client picks from a preference
+  list at runtime.
+- AI attack design remains experimental: one blind rediscovery, no novel violation, no measured false-positive
+  rate. Refund plans are sequential only, with amounts limited to the full or half order amount. On a correct app
+  the refund invariant can only be inconclusive, because merchant refund rows are not in the validated mapping.
+- Benchmark reports do not store prompt text or hashes, or per-plan ledger amounts; those have to be
+  re-established from the code version and a local re-run.

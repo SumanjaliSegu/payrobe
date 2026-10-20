@@ -1,9 +1,18 @@
 # PayProbe
 
-**Finds the payment bugs that `200 OK` hides.** PayProbe replays adversarial Razorpay-style webhook sequences
-against a merchant app and checks the merchant's **database** against an independent gateway ledger, not its
-HTTP responses. An AI layer explains each verified finding, proposes a fix, and the deterministic harness
-proves whether the fix works.
+**Finds the payment bugs that `200 OK` hides.** A merchant's webhook handler can return `200 OK` to every
+Razorpay event and still record the wrong business outcome: an order marked paid by a forged or mismatched
+event, a settled order reopened, goods shipped twice, refunds above what was captured. PayProbe replays
+adversarial Razorpay-style event sequences against a merchant app and checks the merchant's **database**
+against an independent ledger of what the gateway actually did, not its HTTP responses.
+
+How the parts fit together:
+1. **Deterministic harness** discovers the app's payment flow, validates it, and attacks isolated copies 3× each.
+2. **AI investigation** explains each verified finding with checked source citations and chooses follow-up runs
+   from an allowlist of tools.
+3. **AI-assisted repair** proposes a patch, which is applied only to a disposable copy.
+4. **Independent verification**: the harness re-runs every scenario and the invariant checker, reading the
+   independent ledger and the database, decides whether the bug is gone and nothing else broke.
 
 **AI proposes, deterministic code verifies.** A model can never set or change a verdict; nothing is called a
 bug, novel, or fixed without execution evidence.
@@ -17,15 +26,16 @@ bug, novel, or fixed without execution evidence.
 |---|---|
 | **Problem** | A payment integration can answer every webhook with `200 OK` and still corrupt business state: an order marked paid by a forged or mismatched event, a settled order reopened by a late failure, goods shipped twice, refunds exceeding what was captured. HTTP-level tests do not see this; the damage is in the database. |
 | **Approach** | Discover the app's payment flow from source → validate that map against the running app → attack isolated copies 3× each → check six business invariants (I1–I6) against an independent ledger → AI explains and proposes a patch → harness re-runs every scenario to judge it. |
-| **Verified result 1** | Deterministic benchmark: **6 violations** reproduced on the two buggy fixtures, **0 false positives** on the two correct controls (3 repetitions each, no API key). |
-| **Verified result 2** | AI fix-and-verify: **10/10** real repair attempts verified by the harness, **for one bug (I4, late `payment.failed`) in one fixture (`merchant/unseen`)**. |
-| **Not yet validated** | AI-designed attack discovery (experimental). No AI-discovered bug is claimed. |
+| **Verified result 1** | Deterministic benchmark (saved report): **6 violations** reproduced on the two buggy fixtures, **0 false positives** on the two correct controls (3 repetitions each, no API key). Each control had 4 clean scenarios and 1 inconclusive one (the refund scenario, which cannot be fully verified on a correct app; see below). |
+| **Verified result 2** | AI fix-and-verify: **10/10** real repair attempts verified by the harness (4 repair loops whose reports record the target going from 3/3 violated to 0/3, plus 6 evaluation trials recorded as verified with the original app unchanged), **for one bug (I4, late `payment.failed`) in one fixture (`merchant/unseen`)**. Not a claim about other bugs or codebases. |
+| **Blind AI attack result** | With no findings, known scenarios or app identity in its prompt, the model proposed the **same** refund-over-capture sequence as the existing hand-written scenario; the harness confirmed the I5 violation (refunds above captured) in **3/3** repetitions. This is a **rediscovery**, not a novel attack or a new bug. |
+| **Not validated** | No novel AI-discovered violation. The AI false-positive rate is **unmeasured**: the only AI attack that ran on a control app was inconclusive. Blind sample: 2 attack slots on one buggy app, 1 executed plan on one control. |
 
 ```
  Discover ─ Understand ─ Investigate ─ Explain ─ Fix ─ Verify
  (deterministic: discover the payment flow, validate it, attack isolated copies, check I1–I6 vs an
   independent ledger)      ·      (AI: explain findings, propose a patch; design new attacks:
-                                   experimental, not yet validated)
+                                   experimental, one blind rediscovery so far)
  Every AI output is a hypothesis until the harness re-runs it and the invariant checker decides.
 ```
 
@@ -40,6 +50,7 @@ npm run investigate:unseen    # investigate an app the discoverer was not tuned 
 npm run ai:mock               # full AI pipeline with a scripted mock model, offline, clearly labelled
 npm test                      # full suite; AI tests use mocked model responses only
 npm run ai:demo               # optional, real Groq calls: needs GROQ_API_KEY in .env (see BUILT_WITH_AI.md)
+npm run bench:ai:blind -- --apps vulnerable --attack-count 2   # optional, real Groq: blind attack evaluation
 ```
 
 **Report viewer.** Open `tools\report-viewer.html` in a browser (it is a single local file and makes no network
@@ -51,16 +62,46 @@ requests) and load a report JSON: one of the files in `evidence\`, or a report y
 | Claim | Status | Evidence |
 |---|---|---|
 | **Deterministic benchmark**: the 5 hand-written scenarios reproduce **6 violations** on the two buggy fixtures (`unseen` 1, `vulnerable` 5) and give **0 false positives** on the two correct controls (`reference`, `unseen2`), 3 repetitions each | **Verified, reproducible**, no API key | `npm run bench`; [`benchmark-2026-10-17T05-16-45-636Z.json`](evidence/benchmarks/benchmark-2026-10-17T05-16-45-636Z.json) |
-| **AI fix-and-verify** on the `unseen` I4 bug: **10/10** real repair attempts verified by the harness (target 3/3 violated → 0/3, no other scenario changed, original app byte-identical) | **Verified**, for one bug in one fixture | 4 repair runs + 2 × 3 evaluation trials, [`evidence/investigations/`](evidence/MANIFEST.md#ai-investigations-on-merchantunseen-evidenceinvestigations) |
-| **AI-designed attack discovery** (`npm run bench:ai`) | **Experimental, not validated** | see below |
+| **AI fix-and-verify** on the `unseen` I4 bug: **10/10** real repair attempts verified by the harness. The 4 repair loops record the target going from 3/3 violated to 0/3, no other scenario changed, and the original app byte-identical; the 6 evaluation trials record only that each was verified on its first attempt with the original app unchanged | **Verified**, for one bug in one fixture | 4 repair runs + 2 × 3 evaluation trials, [`evidence/investigations/`](evidence/MANIFEST.md#ai-investigations-on-merchantunseen-evidenceinvestigations) |
+| **Blind AI attack design** (`npm run bench:ai:blind`) rediscovered the hand-written refund-over-capture attack on `vulnerable`; I5 violated 3/3 | **Verified rediscovery only.** No novel AI attack or new bug; AI false-positive rate unmeasured | 2 reports in `evidence/benchmarks/`, see [below](#blind-ai-attack-evaluation-2026-10-19) |
 | Live Razorpay integration | **Not built** | mock gateway only |
 
-The reports behind these claims are in [`evidence/`](evidence/MANIFEST.md): byte-identical copies of the
-originals, which the tools write to the git-ignored `results/` folder. The manifest lists what each file supports.
+The reports behind these claims are in [`evidence/`](evidence/MANIFEST.md): copies of the originals, which the
+tools write to the git-ignored `results/` folder. All are byte-identical except one blind-evaluation report in
+which a Groq account identifier was redacted. The manifest lists what each file supports, with hashes.
 
-**AI-designed attacks: not validated.** The model is given only the app's source and an allowlist of mock
-events (never the answer key) and proposes new webhook sequences; the deterministic harness validates and runs
-them. Three real-Groq benchmark runs exist, and none validates the feature:
+#### Blind AI attack evaluation (2026-10-19)
+
+In blind mode (`--blind`) the attack designer gets only the general event and refund vocabulary, the SKU list
+and the app's source with every comment removed. It is not given the app's name (every app is shown as
+`target`), the deterministic findings, or the list of hand-written scenarios. Each plan is validated, run 3× in
+isolation, and judged by the invariant checker. A plan whose fingerprint matches a hand-written scenario is
+still run but is scored as a **rediscovery**, never as novel. What the prompt contains is checked by automated
+tests (`test/ai-blind-prompt.test.js`); the reports record per-call metadata, not prompt text.
+
+| Report | App | What happened |
+|---|---|---|
+| [`benchmark-2026-10-19T11-56-22-048Z.json`](evidence/benchmarks/benchmark-2026-10-19T11-56-22-048Z.json) | `vulnerable` (has bugs) | 4 model calls, 2 rejected by the validator, 2 executed. **Rediscovery:** create order → genuine full capture → full refund → full refund, the same sequence as `cumulative-refund-over-capture`; I5 `gateway_refunds_exceed_captured` in 3/3. **Novel:** a forged wrong-secret double-amount capture, then the genuine capture: clean in 3/3 |
+| [`benchmark-2026-10-19T12-21-38-114Z.redacted.json`](evidence/benchmarks/benchmark-2026-10-19T12-21-38-114Z.redacted.json) (Groq organization ID redacted) | `reference` (control) | 1 plan executed (a forged unsigned double-amount capture): **inconclusive**, because the app rejected the forged event and the targeted checks had nothing to check. The other 2 calls hit Groq's daily token limit |
+
+Both reports have `status: "completed"`. That means the benchmark finished processing the app and saved its
+report; it does **not** mean every AI attack slot succeeded (in the reference run, 2 of 3 model calls failed).
+
+The I5 verdict comes from the independent gateway ledger, not the merchant's records. The saved report records
+the verdict (`gateway_refunds_exceed_captured`, 3/3) but **no amounts or HTTP responses**. The following values
+come from a **later local re-execution** of the recorded plan (no model involved), not from the saved report:
+both refunds accepted (`201`, `201`) and ₹998 refunded against ₹499 captured on `vulnerable`; `201` then `409` on
+`reference`, staying within the capture. The original reports are unchanged.
+
+Inconclusive is neither clean nor a false positive, so these runs give **no** AI false-positive rate. Two earlier
+blind runs that day (`09-10-06-439Z`, `10-04-18-988Z`) gave the model the app's name and source comments, which
+hint at whether an app is meant to be correct. That leak was found and fixed before the two runs above. Those
+earlier runs are not counted (they produced no violation and were cut short by rate limits), and their reports
+are kept locally, not published.
+
+**Earlier AI attack runs (before the blind mode).** The model was given the app's source, the deterministic
+findings and an allowlist of mock events (never the answer key). Three real-Groq benchmark runs exist, and
+none validates the feature:
 - [`benchmark-2026-10-17T05-48-06-963Z.json`](evidence/benchmarks/benchmark-2026-10-17T05-48-06-963Z.json): failed,
   0/24 model calls succeeded; no error detail was recorded.
 - [`benchmark-2026-10-17T14-10-50-758Z.json`](evidence/benchmarks/benchmark-2026-10-17T14-10-50-758Z.json): failed,
@@ -68,10 +109,10 @@ them. Three real-Groq benchmark runs exist, and none validates the feature:
 - [`benchmark-2026-10-18T14-16-05-730Z.json`](evidence/benchmarks/benchmark-2026-10-18T14-16-05-730Z.json): 23/24 model calls succeeded, but only 2 of 24 proposals passed
   validation (21 rejected, 1 unparseable). Both ran on buggy apps: 0 violations (1 clean, 1 inconclusive).
   None ran on a control app, so the false-positive rate is **unmeasured**. Rejection reasons were not recorded
-  (recording was added afterwards and has not yet been demonstrated by a real run; see
+  in that run (recording was added afterwards; the 2026-10-19 runs record them, see
   [benchmark diagnostics](BUILT_WITH_AI.md#benchmark-diagnostics-added-after-the-two-failed-ai-runs)).
 
-No AI-discovered bug is claimed.
+No novel AI-discovered bug is claimed.
 
 ## Why this matters for Razorpay merchants
 
@@ -86,8 +127,8 @@ gateway behaviour each scenario relies on, with Razorpay doc citations, is in
 |---|---|---|---|
 | **Order marked paid with someone else's payment.** A genuine checkout signature for a cheap order is replayed against an expensive one. | I1 | `cross-order-checkout-signature` | Violated on the vulnerable fixture, clean on the reference app (recorded runs, see [Runner scenarios](#runner-scenarios-testscenariosphase3-runnertestjs-sequential-isolated-file-backed-runs)). The callback route is fixture-specific and the replay is an inference |
 | **Goods shipped twice.** The same `payment.captured` webhook is delivered twice, at the same moment. | I3 (and I6 under proven overlap) | `duplicate-capture` | The test suite asserts the duplicate fulfilment on the vulnerable fixture when deliveries overlap at the server, and no violation on the reference app ([details](#evidence-so-far-duplicate-paymentcaptured-testscenariosduplicate-capturedtestjs)) |
-| **A paid order reopened.** An earlier attempt's `payment.failed` arrives after a later attempt's capture (out-of-order webhooks). | I4 | `late-failed-attempt` | The one planted flaw in `merchant/unseen`: its payment flow was discovered from source alone, the flaw reproduced 3/3, and every other scenario was clean on that app; also the bug the AI repaired 10/10 times |
-| **Refunds exceed what was captured.** Two refunds, each equal to the captured amount. | I5 | `cumulative-refund-over-capture` | The independent ledger shows refunds exceeding captured on the vulnerable fixture (3/3, asserted); correct controls reject the second refund. Carries [U]/[A] labels: **not** a claim of proven real-world money loss |
+| **A paid order reopened.** An earlier attempt's `payment.failed` arrives after a later attempt's capture (out-of-order webhooks). | I4 | `late-failed-attempt` | The one planted flaw in `merchant/unseen`: its payment flow was discovered from source alone, the flaw reproduced 3/3, and every other scenario was clean on that app; also the bug behind the 10/10 verified AI repair attempts |
+| **Refunds exceed what was captured.** Two refunds, each equal to the captured amount. | I5 | `cumulative-refund-over-capture` | The independent ledger shows refunds exceeding captured on the vulnerable fixture (3/3, asserted); correct controls reject the second refund. In a blind run the AI attack designer rebuilt this same sequence (a rediscovery). Carries [U]/[A] labels: **not** a claim of proven real-world money loss |
 | **Wrong amount accepted.** A genuine capture whose amount differs from the order. | I2 | `captured-amount-mismatch` | Marked **[U]**: Razorpay's documented capture rules point against this for non-partial-payment orders, so any result is conditional; to be redesigned or retired |
 
 Why the design fits payments work:
@@ -107,8 +148,8 @@ The same rule governs both: **AI proposes, deterministic code verifies.** Full d
 call recorded in the reports, is in [BUILT_WITH_AI.md](BUILT_WITH_AI.md).
 
 **Working with Claude Code.** While developing, the agent worked in the repository under rules I set: never read
-the seeded-bug answer key (`docs/SEEDED_BUGS.md`), preserve existing behaviour and assertions, and report
-results honestly. Examples:
+the seeded-bug answer key (`docs/SEEDED_BUGS.md`), preserve existing behaviour and assertions, leave Git and
+publishing to me, and report results honestly. Examples:
 - **Evidence-first debugging.** A flaky runner test was not fixed by guessing: the failure was reproduced under
   parallel load (5/20), the cause proved with a dose-response experiment (delay 0/250/400 ms → 1/3, 2/3, 3/3
   failures), then a one-line test-only change was verified with 20 parallel runs and three full-suite runs.
@@ -116,6 +157,9 @@ results honestly. Examples:
   injection probes, zero network requests and zero console errors.
 - **Guardrails tested alongside features.** The AI layer was built mock-first, then against real Groq calls,
   with tests for each guardrail (`test/ai-llm.test.js`, `test/ai-guardrails.test.js`, `test/ai-repair.test.js`).
+- **Auditing the evaluation before trusting it.** Before counting any blind result, the agent audited the prompt
+  and found that the app's name and source comments revealed whether it was meant to be correct; that was fixed
+  and covered by leak tests before the counted runs.
 
 **Runtime AI, and what stops it from lying.**
 
@@ -125,27 +169,34 @@ results honestly. Examples:
 | Investigate | `harness/ai/agent.js`, `tools.js` | Tool allowlist (approved scenario runs and source reads only: no shell, network, writes or code execution); step and run limits; a hypothesis without run evidence is downgraded to "unresolved" |
 | Propose a fix | `harness/ai/repair.js` | Patch may edit only `app.js`, cannot touch signature verification or secrets, and cannot add imports, network, fs, eval and similar constructs; applied only to a disposable copy |
 | Verify the fix | `harness/ai/repair.js` + `runner.js` | Baseline reproduced first; **fixed** = target scenario clean in every repetition **and** no other scenario regressed; original source hashed before and after |
-| Design new attacks (experimental) | `harness/ai/attacks.js`, `attack-loop.js` | Model fills a declarative plan, never code; validator checks every field and the gateway-ledger rules; duplicates of hand-written scenarios rejected |
+| Design new attacks (experimental) | `harness/ai/attacks.js`, `attack-loop.js` | Model fills a declarative plan, never code; validator checks every field and the gateway-ledger rules (a refund only after a genuine full capture); outside blind mode, duplicates of hand-written scenarios are rejected; in blind mode they run but are scored as rediscoveries |
 
 **Measured results** (real Groq calls, `openai/gpt-oss-120b`, free tier):
 - **10/10** real repair attempts verified (4 repair loops + 6 evaluation trials), **for the I4 late-failure bug
-  in `merchant/unseen` only**. Each repair loop took the target from 3/3 violated to 0/3, changed no other
-  scenario, and left the original app byte-identical. The accepted patch is in
+  in `merchant/unseen` only**. Each of the 4 repair loops records the target going from 3/3 violated to 0/3, no
+  other scenario changed, and the original app byte-identical. The 6 evaluation trials record only that each
+  was verified on its first attempt with the original app unchanged. The accepted patch is in
   [BUILT_WITH_AI.md](BUILT_WITH_AI.md#recorded-results-local-fixture-merchantunseen-real-groq-calls).
 - Final demo run: 7 model calls, 26,815 tokens, 0 failures; about 161 s of it was free-tier rate-limit pacing.
-- AI-designed attacks: 3 real runs, none validates the feature (see [results](#results-verified-vs-unverified-local-fixtures)).
+- AI-designed attacks: in the counted blind runs, one rediscovery of the hand-written refund attack (I5, 3/3),
+  no novel violation, and no conclusive control result (see [blind evaluation](#blind-ai-attack-evaluation-2026-10-19)).
 
 **What went wrong, and what I changed.** The control apps caught a false positive in an early attack
 vocabulary: a "forged" event with a *valid* signature is indistinguishable from a genuine one, so it flagged
 every app. The fix was to strengthen the guardrail (a forged event must be unsigned or wrong-secret), not to
 relax the check. Groq's JSON mode rejected some agent output, so recovery and retry were added. The agent once
 concluded from source reading alone, so an evidence gate now sends unevidenced conclusions back. Two AI
-benchmark runs failed without recording why, so per-call diagnostics and a circuit breaker were added.
+benchmark runs failed without recording why, so per-call diagnostics and a circuit breaker were added. A blind
+benchmark run was stopped for low memory and lost everything, so reports are now saved after each app.
 
 **Current limitations.**
 - The repair loop has one real target. Success there is not a claim about arbitrary codebases.
-- AI attack discovery is unvalidated: 2 of 24 proposals passed validation in the only completed run, with no
-  violation and no run on a control app. Rejection-reason recording was added afterwards and not yet exercised.
+- AI attack discovery has produced one rediscovery and no novel violation. The blind sample is tiny (2 attack
+  slots on one buggy app, 1 executed plan on one control), and Groq's free-tier daily token limit cut runs short.
+- The attack vocabulary is small and the prompt defines each invariant, so two full refunds after one capture
+  is close to the most obvious I5 test; rebuilding it is weak evidence of attack-design ability.
+- On a correct app the refund invariant can only be inconclusive, because the merchant's refund rows are not in
+  the validated mapping; a refund attack on a control can show a violation but never a clean result.
 - The validated patch runs in-process inside the disposable copy; static validation is not an OS-level sandbox.
 - Mock gateway only; event shapes are not validated against real Razorpay deliveries.
 
@@ -161,7 +212,7 @@ benchmark runs failed without recording why, so per-call diagnostics and a circu
 | Isolated per-run database and app (`harness/run-db.js`, `startIsolatedMerchant`) | Built; used by the validator, isolated-run, runner and investigator tests. The duplicate-captured scenario stays in-memory |
 | Mapping discovery from source (`harness/discovery.js`) | Built: deterministic, evidence-backed, general heuristics; no answer key. Confirmed by the validator on reference, vulnerable and an independently-named **unseen** app |
 | Autonomous investigator (`harness/investigator.js`, `bin/payprobe-investigate.js`) | Built: bounded staged pipeline (discover → validate → select → execute → classify → report), deterministic offline mode, optional LLM narration hook, redacted JSON/Markdown reports. See below |
-| AI layer (`harness/ai/`) | Analyst, agent and fix-and-verify built; real-Groq evidence is for `merchant/unseen` only. AI-designed attacks experimental, not validated |
+| AI layer (`harness/ai/`) | Analyst, agent and fix-and-verify built; real-Groq repair evidence is for `merchant/unseen` only. AI-designed attacks experimental: one blind rediscovery, no novel violation |
 | Real Razorpay integration / test-mode payments | **None.** Everything uses local isolated apps and the mock gateway; no network, no real keys |
 
 ### Evidence so far: duplicate `payment.captured` (`test/scenarios/duplicate-captured.test.js`)
@@ -242,8 +293,8 @@ amount; a correct app rejects the second, a buggy one accepts both. The mock gat
 (Option A); detection uses the independent gateway ledger, and findings are conditional ([U] cumulative cap,
 [A] mock accepts cumulative refunds) — never reported as proven real-world money loss. On a correct app this
 reads **inconclusive** (no violation; I5 is cannot_verify because refund DB rows are not in the validated
-mapping), which is honest, not a false negative. The correct controls (`reference`, `unseen`, `unseen2`)
-reject the second refund (409) and keep the ledger refund total within captured. On the **vulnerable** app
+mapping), which is honest, not a false negative. The correct controls (`reference`, `unseen2`) and `unseen`
+(whose planted flaw is elsewhere) reject the second refund (409) and keep the ledger refund total within captured. On the **vulnerable** app
 both refunds are accepted and the independent ledger shows the refund total exceeding captured in 3/3 runs
 (I5 `gateway_refunds_exceed_captured`); this is now an asserted test finding, still carrying its [U]/[A]
 conditional labels and **not** a claim of proven real-world money loss.
@@ -315,7 +366,7 @@ merchant/
 bin/
   payprobe-investigate.js   CLI: deterministic investigation (npm run investigate*)
   payprobe-ai.js            CLI: AI-assisted investigation (npm run ai*)
-  payprobe-bench.js         CLI: benchmark (npm run bench, bench:mock, bench:ai)
+  payprobe-bench.js         CLI: benchmark (npm run bench, bench:mock, bench:ai, bench:ai:blind)
 harness/
   mock-razorpay.js     builds and signs Razorpay-shaped events
   delivery.js          byte-identical repeated webhook delivery: sequential, simultaneous, barrier

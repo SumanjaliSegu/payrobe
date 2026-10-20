@@ -21,7 +21,8 @@
     "ai:mock": "node --disable-warning=ExperimentalWarning bin/payprobe-ai.js --app unseen --mock",
     "bench": "node --disable-warning=ExperimentalWarning bin/payprobe-bench.js",
     "bench:mock": "node --disable-warning=ExperimentalWarning bin/payprobe-bench.js --mock",
-    "bench:ai": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-bench.js --ai"
+    "bench:ai": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-bench.js --ai",
+    "bench:ai:blind": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env bin/payprobe-bench.js --ai --blind"
   },
   "dependencies": {
     "express": "4.21.2"

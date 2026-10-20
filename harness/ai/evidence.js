@@ -46,4 +46,57 @@ function sourcesForPrompt(sources) {
   return [...sources.entries()].map(([f, lines]) => `=== ${f} (${lines.length} lines) ===\n${numbered(lines)}`).join('\n\n');
 }
 
-module.exports = { loadSources, numbered, quote, sourcesForPrompt };
+// Blanks every comment in .js or .sql text, keeping code, string literals and every newline, so line numbers
+// are unchanged. Used for blind evaluation, where a fixture's comments may say whether it is meant to be
+// correct. JS regex literals are not recognised; the tests check the redacted fixtures still compile.
+function redactComments(text, kind) {
+  const js = kind === 'js';
+  const stack = []; // JS template nesting: '`' while in template text, '{' for each brace inside ${...}
+  let quote = null;
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    const n = text[i + 1];
+    if (stack[stack.length - 1] === '`') {
+      if (c === '\\') { out += c + (n ?? ''); i += 2; continue; }
+      if (c === '`') stack.pop();
+      else if (c === '$' && n === '{') { stack.push('{'); out += '${'; i += 2; continue; }
+      out += c; i++; continue;
+    }
+    if (quote) {
+      if (js && c === '\\') { out += c + (n ?? ''); i += 2; continue; }
+      if (c === quote) quote = null;
+      out += c; i++; continue;
+    }
+    if ((js && c === '/' && n === '/') || (!js && c === '-' && n === '-')) {
+      while (i < text.length && text[i] !== '\n') i++;
+      continue;
+    }
+    if (c === '/' && n === '*') {
+      const end = text.indexOf('*/', i + 2);
+      const stop = end === -1 ? text.length : end + 2;
+      out += text.slice(i, stop).replace(/[^\n]/g, '');
+      i = stop; continue;
+    }
+    if (c === '\'' || c === '"') quote = c;
+    else if (js && c === '`') stack.push('`');
+    else if (js && c === '{' && stack.length) stack.push('{');
+    else if (js && c === '}' && stack[stack.length - 1] === '{') stack.pop();
+    out += c; i++;
+  }
+  return out;
+}
+
+// A copy of loaded sources with comments blanked (see redactComments); line counts are preserved.
+function redactSources(sources) {
+  const out = new Map();
+  for (const [file, lines] of sources) {
+    const kind = /\.sql$/i.test(file) ? 'sql' : 'js';
+    const redacted = redactComments(lines.join('\n'), kind).split('\n');
+    out.set(file, redacted.map((l, i) => (l === lines[i] ? l : l.trimEnd())));
+  }
+  return out;
+}
+
+module.exports = { loadSources, numbered, quote, sourcesForPrompt, redactComments, redactSources };

@@ -1,0 +1,432 @@
+{
+  "schema": "payprobe.benchmark/v1",
+  "status": "completed",
+  "startedAt": "2026-10-19T11:56:22.048Z",
+  "updatedAt": "2026-10-19T11:58:29.618Z",
+  "completedAt": "2026-10-19T11:58:29.618Z",
+  "appsRequested": [
+    "vulnerable"
+  ],
+  "appsCompleted": [
+    "vulnerable"
+  ],
+  "error": null,
+  "mode": "real",
+  "model": "openai/gpt-oss-120b",
+  "repetitions": 3,
+  "results": [
+    {
+      "app": "vulnerable",
+      "role": "has-bugs",
+      "status": "completed",
+      "handwritten": {
+        "scenarios": 5,
+        "violations": 5,
+        "clean": 0,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "scenario": "cross-order-checkout-signature",
+            "targets": [
+              "I1"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "captured-amount-mismatch",
+            "targets": [
+              "I2"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "late-failed-attempt",
+            "targets": [
+              "I4"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "duplicate-capture",
+            "targets": [
+              "I3"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          },
+          {
+            "scenario": "cumulative-refund-over-capture",
+            "targets": [
+              "I5"
+            ],
+            "outcome": "violation",
+            "reproduced": "3/3"
+          }
+        ]
+      },
+      "ai": {
+        "requested": 2,
+        "proposed": 4,
+        "rejected": 2,
+        "duplicates": 0,
+        "errors": 0,
+        "skipped": 0,
+        "modelCalls": 4,
+        "executed": 2,
+        "novel": 1,
+        "rediscoveries": 1,
+        "discoveredViolations": 1,
+        "novelViolations": 0,
+        "rediscoveredViolations": 1,
+        "blind": true,
+        "clean": 1,
+        "inconclusive": 0,
+        "detail": [
+          {
+            "slot": 1,
+            "attempt": 1,
+            "callId": "call-d3260524",
+            "status": "rejected",
+            "title": "Double‑capture forged webhook then genuine capture leads to over‑refund",
+            "targets": [
+              "I2",
+              "I5"
+            ],
+            "plan": null,
+            "fingerprint": null,
+            "novel": false,
+            "rediscovery": false,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": [
+              "$.steps[0].order: expected string"
+            ]
+          },
+          {
+            "slot": 1,
+            "attempt": 2,
+            "callId": "call-7a76d196",
+            "status": "executed",
+            "title": "Exceed refund limit via repeated full refunds",
+            "targets": [
+              "I5"
+            ],
+            "plan": {
+              "title": "Exceed refund limit via repeated full refunds",
+              "targets": [
+                "I5"
+              ],
+              "orders": [
+                {
+                  "ref": "o1",
+                  "sku": "TSHIRT",
+                  "quantity": 1
+                }
+              ],
+              "payments": [
+                {
+                  "ref": "p1"
+                }
+              ],
+              "steps": [
+                {
+                  "action": "create_order",
+                  "order": "o1"
+                },
+                {
+                  "action": "deliver_webhook",
+                  "order": "o1",
+                  "payment": "p1",
+                  "authenticity": "genuine",
+                  "signing": "valid",
+                  "event": "payment.captured",
+                  "amount": "order"
+                },
+                {
+                  "action": "request_refund",
+                  "order": "o1",
+                  "amount": "order"
+                },
+                {
+                  "action": "request_refund",
+                  "order": "o1",
+                  "amount": "order"
+                }
+              ]
+            },
+            "fingerprint": "C(o0:TSHIRTx1) W(g,captured,o0,p0,order) R(o0,order) R(o0,order)",
+            "novel": false,
+            "rediscovery": true,
+            "outcome": "violation",
+            "reproduced": "3/3",
+            "discovered": true,
+            "duplicateOf": "cumulative-refund-over-capture",
+            "violationKinds": {
+              "I5": [
+                "gateway_refunds_exceed_captured"
+              ]
+            },
+            "errors": []
+          },
+          {
+            "slot": 2,
+            "attempt": 1,
+            "callId": "call-360541c9",
+            "status": "rejected",
+            "title": "Forge double‑amount capture before genuine capture",
+            "targets": [
+              "I2"
+            ],
+            "plan": null,
+            "fingerprint": null,
+            "novel": false,
+            "rediscovery": false,
+            "outcome": null,
+            "reproduced": null,
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": null,
+            "errors": [
+              "$.steps[0].order: expected string"
+            ]
+          },
+          {
+            "slot": 2,
+            "attempt": 2,
+            "callId": "call-02f7c5a6",
+            "status": "executed",
+            "title": "Forge double‑amount capture before genuine capture",
+            "targets": [
+              "I2"
+            ],
+            "plan": {
+              "title": "Forge double‑amount capture before genuine capture",
+              "targets": [
+                "I2"
+              ],
+              "orders": [
+                {
+                  "ref": "o1",
+                  "sku": "TSHIRT",
+                  "quantity": 1
+                }
+              ],
+              "payments": [
+                {
+                  "ref": "p_forged"
+                },
+                {
+                  "ref": "p_real"
+                }
+              ],
+              "steps": [
+                {
+                  "action": "create_order",
+                  "order": "o1"
+                },
+                {
+                  "action": "deliver_webhook",
+                  "order": "o1",
+                  "payment": "p_forged",
+                  "authenticity": "forged",
+                  "signing": "wrong_secret",
+                  "event": "payment.captured",
+                  "amount": "double"
+                },
+                {
+                  "action": "deliver_webhook",
+                  "order": "o1",
+                  "payment": "p_real",
+                  "authenticity": "genuine",
+                  "signing": "valid",
+                  "event": "payment.captured",
+                  "amount": "order"
+                }
+              ]
+            },
+            "fingerprint": "C(o0:TSHIRTx1) W(fx,captured,o0,p0,double) W(g,captured,o0,p1,order)",
+            "novel": true,
+            "rediscovery": false,
+            "outcome": "clean",
+            "reproduced": "0/3",
+            "discovered": false,
+            "duplicateOf": null,
+            "violationKinds": {},
+            "errors": []
+          }
+        ]
+      },
+      "falsePositives": 0,
+      "reproducedViolations": 5,
+      "aiFalsePositives": 0,
+      "aiReproducedViolations": 1,
+      "aiNovelViolations": 0,
+      "aiRediscoveredViolations": 1,
+      "aiViolatedInvariants": [
+        "I5"
+      ],
+      "aiNovel": 1
+    }
+  ],
+  "totals": {
+    "apps": 1,
+    "handwritten": {
+      "falsePositivesOnControls": 0,
+      "reproducedViolationsOnBuggy": 5,
+      "controlsClean": true
+    },
+    "ai": {
+      "blind": true,
+      "requestedSlots": 2,
+      "proposals": 4,
+      "modelCalls": 4,
+      "validated": 2,
+      "rejected": 2,
+      "duplicates": 0,
+      "errors": 0,
+      "skipped": 0,
+      "novelExecuted": 1,
+      "executedOnControls": 0,
+      "executedOnBuggy": 2,
+      "violations": 1,
+      "clean": 1,
+      "inconclusive": 0,
+      "falsePositivesOnControls": null,
+      "reproducedViolationsOnBuggy": 1,
+      "rediscoveriesExecuted": 1,
+      "novelViolationsOnBuggy": 0,
+      "rediscoveredViolationsOnBuggy": 1,
+      "violatedInvariantsOnBuggy": {
+        "vulnerable": [
+          "I5"
+        ]
+      }
+    }
+  },
+  "llm": {
+    "calls": 4,
+    "ok": 4,
+    "failed": 0,
+    "failuresByCode": {},
+    "retries": 0,
+    "pacedMs": 80823,
+    "latencyMs": 88353,
+    "promptTokens": 13691,
+    "completionTokens": 1947,
+    "reasoningTokens": 972,
+    "totalTokens": 15638
+  },
+  "llmCalls": [
+    {
+      "id": "call-d3260524",
+      "purpose": "attack:slot-1-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T11:56:53.966Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 0,
+      "latencyMs": 2381,
+      "usage": {
+        "promptTokens": 3269,
+        "completionTokens": 446,
+        "reasoningTokens": 170,
+        "totalTokens": 3715
+      },
+      "finishReason": "stop",
+      "outputChars": 1092,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-7a76d196",
+      "purpose": "attack:slot-1-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T11:56:56.354Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 27115,
+      "latencyMs": 29370,
+      "usage": {
+        "promptTokens": 3588,
+        "completionTokens": 730,
+        "reasoningTokens": 532,
+        "totalTokens": 4318
+      },
+      "finishReason": "stop",
+      "outputChars": 799,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-360541c9",
+      "purpose": "attack:slot-2-try-1",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T11:57:29.348Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 23494,
+      "latencyMs": 25155,
+      "usage": {
+        "promptTokens": 3269,
+        "completionTokens": 430,
+        "reasoningTokens": 160,
+        "totalTokens": 3699
+      },
+      "finishReason": "stop",
+      "outputChars": 1056,
+      "recovered": false,
+      "jsonModeFallback": false
+    },
+    {
+      "id": "call-02f7c5a6",
+      "purpose": "attack:slot-2-try-2",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "startedAt": "2026-10-19T11:57:54.506Z",
+      "status": "ok",
+      "error": null,
+      "httpStatus": 200,
+      "httpEvents": [],
+      "retries": 0,
+      "pacedMs": 30214,
+      "latencyMs": 31447,
+      "usage": {
+        "promptTokens": 3565,
+        "completionTokens": 341,
+        "reasoningTokens": 110,
+        "totalTokens": 3906
+      },
+      "finishReason": "stop",
+      "outputChars": 924,
+      "recovered": false,
+      "jsonModeFallback": false
+    }
+  ],
+  "circuitBreaker": {
+    "maxConsecutiveFailures": 4,
+    "consecutiveFailures": 0,
+    "open": false,
+    "openedAt": null,
+    "openedAfterCallId": null,
+    "lastFailureCodes": []
+  },
+  "durationMs": 127572
+}
